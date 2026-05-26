@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BrochCustom — Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Teko:wght@300;400;500;600&family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #0a0a0a;
+      --white: #f5f5f0;
+      --green: #1e5c2a;
+      --green-light: #2d7a3a;
+      --green-bright: #3a9e4a;
+      --green-dim: rgba(30,92,42,0.15);
+      --mono: 'DM Mono', monospace;
+      --serif: 'Cormorant Garamond', serif;
+      --display: 'Teko', sans-serif;
+    }
+
+    html, body { height: 100%; }
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      max-width: 900px;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    header img { width: 48px; height: 48px; object-fit: contain; }
+    header h1 { font-family: var(--display); font-weight: 400; font-size: 2.2rem; letter-spacing: 0.1em; color: var(--white); line-height: 1; }
+    header span { font-family: var(--mono); font-size: 0.65rem; color: var(--green-light); letter-spacing: 0.2em; text-transform: uppercase; display: block; margin-top: 2px; }
+
+    .divider { width: 100%; max-width: 900px; height: 1px; background: linear-gradient(90deg, transparent, var(--green), transparent); margin-bottom: 1.6rem; }
+
+    /* ===== TABS ===== */
+    .tab-nav {
+      width: 100%;
+      max-width: 900px;
+      padding: 0 2rem;
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.45);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      padding: 0.85rem 1rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .tab-btn:hover { color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.18); }
+    .tab-btn.active {
+      color: var(--white);
+      border-color: var(--green);
+      background: var(--green-dim);
+    }
+    .tab-btn.active::before {
+      content: '';
+      position: absolute;
+      left: 12px; top: 50%;
+      width: 4px; height: 4px;
+      background: var(--green-bright);
+      border-radius: 50%;
+      transform: translateY(-50%);
+    }
+    .tab-icon { margin-right: 0.5rem; opacity: 0.9; }
+
+    main { width: 100%; max-width: 900px; padding: 0 2rem 4rem; flex: 1; }
+    .tab-panel { display: none; flex-direction: column; gap: 2.5rem; }
+    .tab-panel.active { display: flex; }
+
+    /* ===== UPLOAD ===== */
+    .upload-zone {
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px;
+      padding: 3rem 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .upload-zone.dragging { border-color: var(--green-light); background: var(--green-dim); }
+    .upload-icon { font-size: 2.5rem; opacity: 0.6; }
+    .upload-zone h2 { font-family: var(--serif); font-weight: 300; font-size: 1.4rem; letter-spacing: 0.05em; }
+    .upload-zone p { font-size: 0.7rem; color: rgba(255,255,255,0.4); letter-spacing: 0.15em; text-transform: uppercase; }
+
+    .btn-upload {
+      margin-top: 1rem;
+      padding: 0.6rem 2rem;
+      border: 1px solid var(--green);
+      color: var(--green-light);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.25s ease;
+      border-radius: 2px;
+    }
+    .btn-upload:hover { background: var(--green); color: var(--white); }
+
+    .progress-wrap { display: none; width: 100%; margin-top: 1rem; height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--green-light); width: 0%; transition: width 0.3s ease; }
+    #status { font-size: 0.68rem; color: var(--green-light); letter-spacing: 0.15em; text-align: center; min-height: 1.2em; }
+
+    .files-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .files-header h3 { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+    .files-header span { font-size: 0.65rem; color: var(--green-light); }
+    .file-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.9rem 1.2rem;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 3px;
+      background: rgba(255,255,255,0.02);
+      transition: all 0.2s ease;
+    }
+    .file-item:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
+    .file-icon { font-size: 1.2rem; opacity: 0.7; flex-shrink: 0; }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-meta { font-size: 0.62rem; color: rgba(255,255,255,0.3); margin-top: 2px; }
+    .file-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+    .btn-action {
+      padding: 0.3rem 0.8rem;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid;
+    }
+    .btn-dl { border-color: var(--green); color: var(--green-light); background: transparent; }
+    .btn-dl:hover { background: var(--green); color: var(--white); }
+    .btn-del { border-color: rgba(255,80,80,0.3); color: rgba(255,100,100,0.6); background: transparent; }
+    .btn-del:hover { background: rgba(255,50,50,0.15); border-color: rgba(255,80,80,0.6); color: rgba(255,120,120,1); }
+    .btn-share { border-color: rgba(100,160,255,0.35); color: rgba(120,175,255,0.7); background: transparent; }
+    .btn-share:hover { background: rgba(100,160,255,0.12); border-color: rgba(100,160,255,0.6); color: rgba(150,200,255,1); }
+    .btn-share:disabled { opacity: 0.4; cursor: default; }
+    .btn-copy { border-color: rgba(80,200,180,0.4); color: rgba(100,220,200,0.8); background: transparent; }
+    .btn-copy:hover { background: rgba(80,200,180,0.12); border-color: rgba(80,200,180,0.7); color: rgba(140,240,220,1); }
+    .btn-copy.copied { border-color: var(--green-bright); color: var(--green-bright); }
+    .btn-preview { border-color: rgba(255,200,80,0.38); color: rgba(255,215,100,0.78); background: transparent; }
+    .btn-preview:hover { background: rgba(255,200,80,0.1); border-color: rgba(255,200,80,0.65); color: rgba(255,225,130,1); }
+    .btn-cast { border-color: rgba(180,140,255,0.4); color: rgba(200,170,255,0.85); background: transparent; }
+    .btn-cast:hover { background: rgba(180,140,255,0.12); border-color: rgba(180,140,255,0.7); color: rgba(220,200,255,1); }
+    .btn-cast.casting {
+      border-color: rgba(58,158,74,0.7);
+      color: rgba(120,220,140,1);
+      background: rgba(58,158,74,0.15);
+      animation: castPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes castPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(58,158,74,0.4); }
+      50%      { box-shadow: 0 0 0 6px rgba(58,158,74,0); }
+    }
+
+    .empty { text-align: center; padding: 3rem; color: rgba(255,255,255,0.2); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; border: 1px dashed rgba(255,255,255,0.06); border-radius: 3px; }
+
+    /* ===== PREVIEW MODAL ===== */
+    .preview-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .preview-overlay.open { display: flex; }
+    .preview-box {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      width: 100%;
+      max-width: 720px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    .preview-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.3rem; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; gap: 1rem; }
+    .preview-title-row { display: flex; align-items: center; gap: 0.6rem; min-width: 0; overflow: hidden; }
+    .preview-file-icon { font-size: 1rem; flex-shrink: 0; }
+    .preview-file-name { font-size: 0.78rem; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .preview-close { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); font-size: 1rem; cursor: pointer; padding: 0.25rem 0.6rem; line-height: 1; flex-shrink: 0; border-radius: 2px; font-family: var(--mono); transition: all 0.2s; }
+    .preview-close:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
+    .preview-body { overflow: auto; flex: 1; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    .preview-body img { max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 4px; }
+    .preview-body iframe { width: 100%; height: 65vh; border: none; background: white; }
+    .preview-body pre { width: 100%; font-family: var(--mono); font-size: 0.72rem; color: rgba(255,255,255,0.78); white-space: pre-wrap; word-break: break-all; line-height: 1.65; max-height: 65vh; overflow: auto; align-self: flex-start; }
+    .no-preview { text-align: center; font-size: 0.7rem; color: rgba(255,255,255,0.3); letter-spacing: 0.15em; text-transform: uppercase; }
+    .no-preview .big-icon { font-size: 3.5rem; display: block; margin-bottom: 1rem; opacity: 0.45; }
+    .preview-loading { font-size: 0.7rem; color: var(--green-light); letter-spacing: 0.2em; text-transform: uppercase; animation: pulse 1.4s ease infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+    /* ===== FONT PREVIEW ===== */
+    .font-intro { text-align: center; padding: 1rem 0 0.5rem; }
+    .font-intro h2 { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 1.8rem; letter-spacing: 0.02em; margin-bottom: 0.5rem; }
+    .font-intro p { font-size: 0.7rem; color: rgba(255,255,255,0.4); letter-spacing: 0.15em; text-transform: uppercase; }
+
+    .font-controls {
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 4px;
+      padding: 1.5rem;
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .font-control-row { display: flex; flex-direction: column; gap: 0.5rem; }
+    .font-control-label { font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+    .font-text-input {
+      width: 100%;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 3px;
+      color: var(--white);
+      font-family: var(--mono);
+      font-size: 1rem;
+      padding: 0.95rem 1.1rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .font-text-input:focus { border-color: var(--green); }
+    .font-text-input::placeholder { color: rgba(255,255,255,0.2); }
+
+    .font-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    .font-option { display: flex; flex-direction: column; gap: 0.4rem; }
+    .font-color-row { display: flex; align-items: center; gap: 0.7rem; }
+    .font-color-picker { width: 38px; height: 38px; border: none; padding: 0; background: none; cursor: pointer; border-radius: 3px; flex-shrink: 0; }
+    .font-color-picker::-webkit-color-swatch-wrapper { padding: 0; border-radius: 3px; overflow: hidden; }
+    .font-color-picker::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.15); border-radius: 3px; }
+    .font-color-picker::-moz-color-swatch { border: 1px solid rgba(255,255,255,0.15); border-radius: 3px; }
+    .font-color-value { font-size: 0.65rem; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; }
+
+    .font-size-row { display: flex; align-items: center; gap: 0.8rem; }
+    .font-size-slider { flex: 1; accent-color: var(--green-bright); cursor: pointer; }
+    .font-size-value { font-family: var(--display); font-size: 1.4rem; color: var(--green-bright); min-width: 40px; text-align: right; letter-spacing: 0.05em; }
+
+    .font-preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+    .font-preview-header h3 { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+    .font-preview-header span { font-size: 0.65rem; color: var(--green-light); }
+
+    .font-previews {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 0.7rem;
+    }
+    .font-preview-card {
+      background: var(--fabric, #ffffff);
+      border-radius: 4px;
+      padding: 1rem 1rem;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .font-preview-card:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .font-preview-card::before {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border: 1px dashed rgba(0,0,0,0.08);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .font-preview-name {
+      font-family: var(--mono);
+      font-weight: 500;
+      font-size: 0.62rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.7);
+      margin-bottom: 0.5rem;
+      position: relative;
+      z-index: 2;
+    }
+    .font-preview-text {
+      color: var(--thread-color, #1e5c2a);
+      word-break: break-word;
+      text-align: center;
+      padding: 0.2rem 0;
+      line-height: 1.2;
+      position: relative;
+      z-index: 2;
+    }
+    .font-loading { text-align: center; padding: 2rem; font-size: 0.7rem; color: var(--green-light); letter-spacing: 0.2em; text-transform: uppercase; animation: pulse 1.4s ease infinite; }
+    .font-empty { text-align: center; padding: 3rem 1rem; border: 1px dashed rgba(255,255,255,0.08); border-radius: 3px; }
+    .font-empty-icon { font-size: 2.4rem; opacity: 0.3; display: block; margin-bottom: 0.8rem; }
+    .font-empty h4 { font-family: var(--serif); font-style: italic; font-size: 1.2rem; color: rgba(255,255,255,0.5); margin-bottom: 0.4rem; }
+    .font-empty p { font-size: 0.65rem; color: rgba(255,255,255,0.3); letter-spacing: 0.15em; text-transform: uppercase; }
+
+    /* ===== FOOTER + ADMIN ===== */
+    footer {
+      padding: 1.5rem;
+      font-size: 0.6rem;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 0.2em;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    footer a { color: var(--green-light); text-decoration: none; transition: color 0.2s; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; }
+    footer a:hover { color: var(--green-bright); }
+    footer .dot { color: rgba(255,255,255,0.15); }
+    .admin-link { background: transparent; border: none; color: rgba(255,255,255,0.2); font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; padding: 0.2rem 0.5rem; transition: color 0.2s ease; }
+    .admin-link:hover { color: var(--green-light); }
+
+    .admin-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1100; align-items: center; justify-content: center; padding: 1.5rem; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .admin-overlay.open { display: flex; }
+    .admin-box { background: #0d0d0d; border: 1px solid var(--green); border-radius: 6px; width: 100%; max-width: 560px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(30,92,42,0.25); }
+    .admin-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.3rem; border-bottom: 1px solid rgba(30,92,42,0.4); flex-shrink: 0; }
+    .admin-title { font-family: var(--display); font-size: 1.2rem; letter-spacing: 0.18em; color: var(--white); display: flex; align-items: center; gap: 0.6rem; }
+    .admin-title::before { content: '◆'; color: var(--green-bright); font-size: 0.7rem; }
+    .admin-close { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); font-size: 1rem; cursor: pointer; padding: 0.25rem 0.6rem; line-height: 1; border-radius: 2px; font-family: var(--mono); }
+    .admin-close:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
+    .admin-body { padding: 1.6rem 1.3rem; overflow: auto; flex: 1; }
+    .admin-gate { display: flex; flex-direction: column; gap: 0.8rem; }
+    .admin-gate p { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.4); text-align: center; margin-bottom: 0.5rem; }
+    .admin-password { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(30,92,42,0.4); color: var(--white); font-family: var(--mono); font-size: 0.9rem; padding: 0.85rem 1rem; border-radius: 3px; outline: none; letter-spacing: 0.15em; text-align: center; }
+    .admin-password:focus { border-color: var(--green-bright); }
+    .admin-submit { padding: 0.85rem; background: var(--green); border: none; color: var(--white); font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: background 0.2s ease; }
+    .admin-submit:hover { background: var(--green-bright); }
+    .admin-error { font-size: 0.62rem; color: rgba(255,100,100,0.7); letter-spacing: 0.15em; text-align: center; text-transform: uppercase; min-height: 1em; }
+
+    .admin-panel { display: flex; flex-direction: column; gap: 1.5rem; }
+    .admin-section h4 { font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 0.8rem; }
+    .admin-font-upload { border: 1.5px dashed rgba(30,92,42,0.5); border-radius: 4px; padding: 1.6rem 1.2rem; text-align: center; cursor: pointer; transition: all 0.25s ease; background: rgba(30,92,42,0.04); }
+    .admin-font-upload:hover, .admin-font-upload.dragging { border-color: var(--green-bright); background: var(--green-dim); }
+    .admin-font-upload .icon { font-size: 1.6rem; opacity: 0.7; display: block; margin-bottom: 0.5rem; }
+    .admin-font-upload .text { font-family: var(--serif); font-style: italic; font-size: 1rem; margin-bottom: 0.3rem; }
+    .admin-font-upload .hint { font-size: 0.6rem; color: rgba(255,255,255,0.35); letter-spacing: 0.15em; text-transform: uppercase; }
+    .admin-status { font-size: 0.65rem; color: var(--green-light); letter-spacing: 0.15em; text-align: center; min-height: 1.2em; margin-top: 0.5rem; }
+    .admin-font-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .admin-font-item { display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 0.9rem; border: 1px solid rgba(255,255,255,0.06); border-radius: 3px; background: rgba(255,255,255,0.02); gap: 0.6rem; }
+    .admin-font-item-name { font-size: 0.75rem; color: rgba(255,255,255,0.85); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .admin-font-item-actions { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
+    .admin-font-move {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.55);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      width: 26px;
+      height: 26px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+    }
+    .admin-font-move:hover:not(:disabled) {
+      color: var(--white);
+      border-color: rgba(58,158,74,0.5);
+      background: rgba(58,158,74,0.1);
+    }
+    .admin-font-move:disabled { opacity: 0.25; cursor: not-allowed; }
+    .admin-font-del { background: transparent; border: 1px solid rgba(255,80,80,0.3); color: rgba(255,100,100,0.7); font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; padding: 0.35rem 0.7rem; cursor: pointer; border-radius: 2px; transition: all 0.2s ease; flex-shrink: 0; }
+    .admin-font-del:hover { background: rgba(255,50,50,0.15); border-color: rgba(255,80,80,0.6); color: rgba(255,140,140,1); }
+    .admin-empty { text-align: center; padding: 1.2rem; font-size: 0.6rem; color: rgba(255,255,255,0.25); letter-spacing: 0.18em; text-transform: uppercase; border: 1px dashed rgba(255,255,255,0.06); border-radius: 3px; }
+
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      body { background: #050505; }
+      header { padding: 1rem 1.2rem; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); max-width: 100%; gap: 0.8rem; }
+      header img { width: 32px; height: 32px; }
+      header h1 { font-size: 1.6rem; }
+      header span { font-size: 0.55rem; }
+      .divider { display: none; }
+      .tab-nav { padding: 0.8rem 1rem 0; gap: 0.4rem; margin-bottom: 1.2rem; }
+      .tab-btn { padding: 0.85rem 0.7rem; font-size: 0.65rem; border-radius: 10px; }
+      .tab-btn.active::before { left: 8px; }
+      main { padding: 0 1.2rem 2rem; }
+      .tab-panel { gap: 1.2rem; }
+
+      .upload-zone { border-radius: 20px; border: 2px dashed rgba(30,92,42,0.5); background: rgba(30,92,42,0.06); padding: 3rem 2rem; gap: 1rem; min-height: 280px; }
+      .upload-zone.dragging { border-color: var(--green-bright); background: rgba(30,92,42,0.15); }
+      .upload-icon { font-size: 4rem; opacity: 0.8; background: rgba(30,92,42,0.15); width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-bottom: 0.5rem; }
+      .upload-zone h2 { font-family: 'Teko', sans-serif; font-size: 2rem; letter-spacing: 0.08em; font-weight: 400; }
+      .upload-zone p { font-size: 0.65rem; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); }
+      .btn-upload { width: 100%; padding: 1.1rem; font-size: 0.85rem; letter-spacing: 0.2em; border-radius: 12px; border: none; background: var(--green); color: var(--white); margin-top: 0.5rem; }
+      .btn-upload:hover { background: var(--green-bright); }
+
+      .file-item { border-radius: 14px; padding: 1rem 1.1rem; flex-wrap: wrap; gap: 0.8rem; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+      .file-icon { font-size: 1.8rem; background: rgba(255,255,255,0.05); width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border-radius: 10px; flex-shrink: 0; }
+      .file-name { font-size: 0.82rem; }
+      .file-meta { font-size: 0.65rem; margin-top: 3px; }
+
+      .file-actions { width: 100%; gap: 0.5rem; flex-wrap: wrap; }
+      .btn-action { flex: 1 1 calc(33.33% - 0.4rem); min-width: 70px; text-align: center; padding: 0.7rem 0.4rem; font-size: 0.65rem; border-radius: 10px; }
+      .btn-dl { background: rgba(30,92,42,0.15); border-color: var(--green); }
+      .btn-del { background: rgba(255,50,50,0.05); }
+      .btn-share { background: rgba(100,160,255,0.07); border-color: rgba(100,160,255,0.35); color: rgba(120,175,255,0.8); }
+      .btn-copy { background: rgba(80,200,180,0.06); border-color: rgba(80,200,180,0.35); }
+      .btn-preview { background: rgba(255,200,80,0.06); border-color: rgba(255,200,80,0.32); }
+      .btn-cast { background: rgba(180,140,255,0.07); border-color: rgba(180,140,255,0.36); }
+
+      .empty { border-radius: 14px; padding: 2.5rem 1rem; font-size: 0.65rem; }
+
+      .preview-overlay { padding: 0.8rem; align-items: flex-end; }
+      .preview-box { border-radius: 18px; max-height: 90vh; }
+
+      .font-intro h2 { font-size: 1.5rem; }
+      .font-controls { border-radius: 14px; padding: 1.1rem; }
+      .font-text-input { font-size: 0.95rem; border-radius: 10px; padding: 0.95rem 1rem; }
+      .font-options { grid-template-columns: 1fr; gap: 1rem; }
+      .font-previews { grid-template-columns: 1fr; }
+      .font-preview-card { padding: 1.2rem 1.2rem; border-radius: 14px; }
+
+      .admin-overlay { padding: 0.8rem; align-items: flex-end; }
+      .admin-box { border-radius: 18px; max-height: 90vh; }
+      .admin-font-upload { border-radius: 14px; padding: 2rem 1.2rem; }
+      .admin-submit { border-radius: 12px; padding: 1rem; }
+
+      footer { font-size: 0.65rem; padding: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="Website.png" alt="BrochCustom Logo" onerror="this.style.display='none'"/>
+    <div>
+      <h1>BrochCustom</h1>
+      <span>tools</span>
+    </div>
+  </header>
+
+  <div class="divider"></div>
+
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" data-tab="files"><span class="tab-icon">📂</span>File Sharing</button>
+    <button class="tab-btn" data-tab="fonts"><span class="tab-icon">✦</span>Font Preview</button>
+  </nav>
+
+  <main>
+    <!-- ============ FILE SHARING TAB ============ -->
+    <section id="tab-files" class="tab-panel active">
+      <div class="upload-zone" id="dropZone">
+        <span class="upload-icon">⬆</span>
+        <h2>Drop files here</h2>
+        <p>browse your device or paste with Ctrl+V</p>
+        <button class="btn-upload" id="selectBtn">Select Files</button>
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div id="status"></div>
+      </div>
+
+      <div>
+        <div class="files-header">
+          <h3>Stored Files</h3>
+          <span id="fileCount">0 files</span>
+        </div>
+        <div class="file-list" id="fileList">
+          <div class="empty">No files uploaded yet</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FONT PREVIEW TAB ============ -->
+    <section id="tab-fonts" class="tab-panel">
+      <div class="font-intro">
+        <h2>Preview your name in our fonts</h2>
+        <p>type below to see it stitched</p>
+      </div>
+
+      <div class="font-controls">
+        <div class="font-control-row">
+          <label class="font-control-label" for="fontTextInput">Type your text</label>
+          <input type="text" id="fontTextInput" class="font-text-input" placeholder="Your name here..." value="Paola">
+        </div>
+
+        <div class="font-options">
+          <div class="font-option">
+            <label class="font-control-label">Thread color</label>
+            <div class="font-color-row">
+              <input type="color" id="threadColor" class="font-color-picker" value="#1e5c2a">
+              <span class="font-color-value" id="threadColorValue">#1e5c2a</span>
+            </div>
+          </div>
+          <div class="font-option">
+            <label class="font-control-label">Fabric color</label>
+            <div class="font-color-row">
+              <input type="color" id="fabricColor" class="font-color-picker" value="#ffffff">
+              <span class="font-color-value" id="fabricColorValue">#ffffff</span>
+            </div>
+          </div>
+          <div class="font-option">
+            <label class="font-control-label">Size</label>
+            <div class="font-size-row">
+              <input type="range" id="sizeSlider" class="font-size-slider" min="24" max="140" value="64">
+              <span class="font-size-value" id="sizeValue">64</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="font-preview-header">
+          <h3>Available Fonts</h3>
+          <span id="fontCount">0 fonts</span>
+        </div>
+        <div class="font-previews" id="fontPreviews">
+          <div class="font-loading">loading fonts…</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <input type="file" id="fileInput" multiple style="display:none" />
+
+  <!-- Preview modal -->
+  <div class="preview-overlay" id="previewOverlay">
+    <div class="preview-box">
+      <div class="preview-header">
+        <div class="preview-title-row">
+          <span class="preview-file-icon" id="previewIcon">📁</span>
+          <span class="preview-file-name" id="previewTitle"></span>
+        </div>
+        <button class="preview-close" id="previewClose">✕ Close</button>
+      </div>
+      <div class="preview-body" id="previewBody">
+        <div class="preview-loading">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin modal -->
+  <div class="admin-overlay" id="adminOverlay">
+    <div class="admin-box">
+      <div class="admin-header">
+        <div class="admin-title">Admin Console</div>
+        <button class="admin-close" id="adminClose">✕</button>
+      </div>
+      <div class="admin-body">
+        <div class="admin-gate" id="adminGate">
+          <p>Enter admin password</p>
+          <input type="password" id="adminPassword" class="admin-password" placeholder="••••••••" autocomplete="off">
+          <button class="admin-submit" id="adminSubmit">Unlock</button>
+          <div class="admin-error" id="adminError"></div>
+        </div>
+
+        <div class="admin-panel" id="adminPanel" style="display:none">
+          <div class="admin-section">
+            <h4>Upload fonts</h4>
+            <div class="admin-font-upload" id="adminFontDrop">
+              <input type="file" id="adminFontInput" accept=".ttf,.otf,.woff,.woff2" multiple hidden>
+              <span class="icon">⬆</span>
+              <div class="text">Drop font files or click</div>
+              <div class="hint">.ttf · .otf · .woff · .woff2</div>
+            </div>
+            <div class="admin-status" id="adminStatus"></div>
+          </div>
+
+          <div class="admin-section">
+            <h4>Current fonts</h4>
+            <div class="admin-font-list" id="adminFontList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://brochcustom.com/" target="_blank">← Main Page</a>
+    <span class="dot">·</span>
+    <button class="admin-link" id="adminOpenBtn">Admin</button>
+  </footer>
+
+  <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+      /* ===== CONFIG ===== */
+      var SUPABASE_URL = 'https://ixuxzdaevbytnznxmtal.supabase.co';
+      var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4dXh6ZGFldmJ5dG56bnhtdGFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NzIyNjMsImV4cCI6MjA5MjA0ODI2M30.9FxQ47kbShuIehy2aqRkG11fewLjHxX1RvoPtCYPTIE';
+      var BUCKET = 'files';
+      var FONTS_FOLDER = '_fonts';
+      var FONT_ORDER_FILE = '_settings/font-order.json';
+      // ⚠ CHANGE THIS to your own password.
+      var ADMIN_PASSWORD = '0214';
+
+      var client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      /* ===== DOM refs ===== */
+      var dropZone     = document.getElementById('dropZone');
+      var fileInput    = document.getElementById('fileInput');
+      var selectBtn    = document.getElementById('selectBtn');
+      var fileList     = document.getElementById('fileList');
+      var fileCount    = document.getElementById('fileCount');
+      var progressWrap = document.getElementById('progressWrap');
+      var progressBar  = document.getElementById('progressBar');
+      var statusEl     = document.getElementById('status');
+      var previewOverlay = document.getElementById('previewOverlay');
+      var previewTitle   = document.getElementById('previewTitle');
+      var previewIcon    = document.getElementById('previewIcon');
+      var previewBody    = document.getElementById('previewBody');
+      var previewClose   = document.getElementById('previewClose');
+      var fontTextInput     = document.getElementById('fontTextInput');
+      var threadColor       = document.getElementById('threadColor');
+      var fabricColor       = document.getElementById('fabricColor');
+      var threadColorValue  = document.getElementById('threadColorValue');
+      var fabricColorValue  = document.getElementById('fabricColorValue');
+      var sizeSlider        = document.getElementById('sizeSlider');
+      var sizeValue         = document.getElementById('sizeValue');
+      var fontPreviews      = document.getElementById('fontPreviews');
+      var fontCount         = document.getElementById('fontCount');
+      var adminOpenBtn   = document.getElementById('adminOpenBtn');
+      var adminOverlay   = document.getElementById('adminOverlay');
+      var adminClose     = document.getElementById('adminClose');
+      var adminGate      = document.getElementById('adminGate');
+      var adminPanel     = document.getElementById('adminPanel');
+      var adminPassword  = document.getElementById('adminPassword');
+      var adminSubmit    = document.getElementById('adminSubmit');
+      var adminError     = document.getElementById('adminError');
+      var adminFontDrop  = document.getElementById('adminFontDrop');
+      var adminFontInput = document.getElementById('adminFontInput');
+      var adminStatus    = document.getElementById('adminStatus');
+      var adminFontList  = document.getElementById('adminFontList');
+
+      var loadedFonts = [];
+      var fontOrder = [];   // filenames in display order
+
+      /* ===== TABS ===== */
+      var tabButtons = document.querySelectorAll('.tab-btn');
+      var tabPanels  = document.querySelectorAll('.tab-panel');
+      function activateTab(tabName) {
+        var btn = document.querySelector('.tab-btn[data-tab="' + tabName + '"]');
+        var panel = document.getElementById('tab-' + tabName);
+        if (!btn || !panel) return;
+        tabButtons.forEach(function(b) { b.classList.remove('active'); });
+        tabPanels.forEach(function(p) { p.classList.remove('active'); });
+        btn.classList.add('active');
+        panel.classList.add('active');
+        if (history.replaceState) history.replaceState(null, '', '#' + tabName);
+      }
+      tabButtons.forEach(function(btn) {
+        btn.addEventListener('click', function() { activateTab(btn.getAttribute('data-tab')); });
+      });
+      var initHash = (window.location.hash || '').replace('#', '');
+      if (initHash && document.getElementById('tab-' + initHash)) activateTab(initHash);
+      window.addEventListener('hashchange', function() {
+        var h = (window.location.hash || '').replace('#', '');
+        if (h && document.getElementById('tab-' + h)) activateTab(h);
+      });
+
+      /* ===== CAST SDK ===== */
+      var castSupported = false;
+      window['__onGCastApiAvailable'] = function(isAvailable) {
+        if (isAvailable && window.chrome && window.chrome.cast) {
+          try {
+            cast.framework.CastContext.getInstance().setOptions({
+              receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+              autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+            });
+            castSupported = true;
+            loadFiles();
+          } catch (e) { console.warn('Cast init failed', e); }
+        }
+      };
+      function canCast(ext) {
+        return ['jpg','jpeg','png','gif','webp','bmp',
+                'mp4','webm','mov','m4v',
+                'mp3','m4a','wav','ogg','aac'].indexOf(ext) > -1;
+      }
+      function getMimeType(ext) {
+        var map = {
+          jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif',
+          webp:'image/webp', bmp:'image/bmp',
+          mp4:'video/mp4', webm:'video/webm', mov:'video/quicktime', m4v:'video/mp4',
+          mp3:'audio/mpeg', m4a:'audio/mp4', wav:'audio/wav', ogg:'audio/ogg', aac:'audio/aac'
+        };
+        return map[ext] || 'application/octet-stream';
+      }
+      function castFile(fileName, displayName, btn) {
+        if (!castSupported) {
+          alert('Cast is only available on Google Chrome with a Chromecast device on the same Wi-Fi network.');
+          return;
+        }
+        var ext = displayName.split('.').pop().toLowerCase();
+        var origText = btn.textContent;
+        btn.textContent = '...';
+        client.storage.from(BUCKET).createSignedUrl(fileName, 7200).then(function(result) {
+          if (result.error || !result.data) {
+            btn.textContent = origText;
+            alert('Could not get file link for casting');
+            return;
+          }
+          var fileUrl = result.data.signedUrl;
+          var ctx = cast.framework.CastContext.getInstance();
+          function loadMedia() {
+            var session = ctx.getCurrentSession();
+            if (!session) { btn.textContent = origText; return; }
+            var mediaInfo = new chrome.cast.media.MediaInfo(fileUrl, getMimeType(ext));
+            mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+            mediaInfo.metadata.title = displayName;
+            var request = new chrome.cast.media.LoadRequest(mediaInfo);
+            session.loadMedia(request).then(
+              function() {
+                btn.textContent = '✓ Casting';
+                btn.classList.add('casting');
+                setTimeout(function() { btn.textContent = origText; btn.classList.remove('casting'); }, 3000);
+              },
+              function(err) {
+                btn.textContent = origText;
+                alert('Cast failed: ' + (err && err.description ? err.description : 'unknown error'));
+              }
+            );
+          }
+          if (ctx.getCurrentSession()) {
+            loadMedia();
+          } else {
+            ctx.requestSession().then(
+              function() { loadMedia(); },
+              function(err) {
+                btn.textContent = origText;
+                if (err !== 'cancel') console.warn('Cast session failed', err);
+              }
+            );
+          }
+        });
+      }
+
+      /* ===== UPLOADS ===== */
+      selectBtn.addEventListener('click', function(e) { e.stopPropagation(); fileInput.click(); });
+      fileInput.addEventListener('change', function(e) { handleFiles(e.target.files); fileInput.value = ''; });
+      dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragging'); });
+      dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragging'); });
+      dropZone.addEventListener('drop', function(e) { e.preventDefault(); dropZone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
+      document.addEventListener('paste', function(e) {
+        if (!document.getElementById('tab-files').classList.contains('active')) return;
+        var items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+        var files = [];
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].kind === 'file') { var f = items[i].getAsFile(); if (f) files.push(f); }
+        }
+        if (files.length > 0) {
+          dropZone.classList.add('dragging');
+          setTimeout(function() { dropZone.classList.remove('dragging'); }, 600);
+          handleFiles(files);
+        }
+      });
+
+      function handleFiles(files) {
+        var arr = Array.prototype.slice.call(files);
+        function next(i) { if (i >= arr.length) return; uploadFile(arr[i], function() { next(i + 1); }); }
+        next(0);
+      }
+
+      function uploadFile(file, callback) {
+        progressWrap.style.display = 'block';
+        progressBar.style.width = '40%';
+        statusEl.textContent = 'Uploading ' + file.name + '...';
+        var fileName = Date.now() + '_' + file.name;
+        client.storage.from(BUCKET).upload(fileName, file).then(function(result) {
+          if (result.error) {
+            statusEl.textContent = 'Failed: ' + result.error.message;
+            progressWrap.style.display = 'none';
+            if (callback) callback();
+            return;
+          }
+          progressBar.style.width = '100%';
+          setTimeout(function() {
+            progressWrap.style.display = 'none';
+            progressBar.style.width = '0%';
+            statusEl.textContent = '✓ Uploaded!';
+            setTimeout(function() { statusEl.textContent = ''; }, 2000);
+            loadFiles();
+            if (callback) callback();
+          }, 400);
+        });
+      }
+
+      /* ===== HELPERS ===== */
+      function getFileIcon(name) {
+        var ext = name.split('.').pop().toLowerCase();
+        if (['jpg','jpeg','png','gif','webp','svg'].indexOf(ext) > -1) return '🖼';
+        if (ext === 'pdf') return '📄';
+        if (['zip','rar','7z','tar','gz'].indexOf(ext) > -1) return '📦';
+        if (['mp4','mov','avi','mkv','webm','m4v'].indexOf(ext) > -1) return '🎬';
+        if (['mp3','wav','flac','aac','m4a','ogg'].indexOf(ext) > -1) return '🎵';
+        if (['doc','docx'].indexOf(ext) > -1) return '📝';
+        if (['xls','xlsx','csv'].indexOf(ext) > -1) return '📊';
+        if (['ttf','otf','woff','woff2'].indexOf(ext) > -1) return '✦';
+        if (['txt','md','json','xml','html','css','js'].indexOf(ext) > -1) return '📃';
+        return '📁';
+      }
+      function formatSize(bytes) {
+        if (!bytes) return '—';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+      }
+      function isPreviewable(ext) {
+        return ['jpg','jpeg','png','gif','webp','svg','pdf',
+                'txt','md','json','xml','csv','html','css','js','ts','py','log','yaml','yml'].indexOf(ext) > -1;
+      }
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      /* ===== FILE LIST ===== */
+      function loadFiles() {
+        client.storage.from(BUCKET).list('', { sortBy: { column: 'created_at', order: 'desc' } }).then(function(result) {
+          fileList.innerHTML = '';
+          if (result.error || !result.data) {
+            fileList.innerHTML = '<div class="empty">No files uploaded yet</div>';
+            fileCount.textContent = '0 files';
+            return;
+          }
+
+          // filter out internal stuff (anything starting with _)
+          var data = result.data.filter(function(f) { return f.name.indexOf('_') !== 0; });
+
+          if (data.length === 0) {
+            fileList.innerHTML = '<div class="empty">No files uploaded yet</div>';
+            fileCount.textContent = '0 files';
+            return;
+          }
+
+          fileCount.textContent = data.length + (data.length === 1 ? ' file' : ' files');
+
+          data.forEach(function(file) {
+            var displayName = file.name.replace(/^\d+_/, '');
+            var ext = displayName.split('.').pop().toLowerCase();
+            var canPreview = isPreviewable(ext);
+            var showCast = castSupported && canCast(ext);
+
+            var item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML =
+              '<span class="file-icon">' + getFileIcon(file.name) + '</span>' +
+              '<div class="file-info">' +
+                '<div class="file-name">' + displayName + '</div>' +
+                '<div class="file-meta">' + formatSize(file.metadata && file.metadata.size) + '</div>' +
+              '</div>' +
+              '<div class="file-actions">' +
+                (canPreview ? '<button class="btn-action btn-preview">Preview</button>' : '') +
+                '<button class="btn-action btn-copy">Copy Link</button>' +
+                '<button class="btn-action btn-dl">Download</button>' +
+                '<button class="btn-action btn-share">Share</button>' +
+                (showCast ? '<button class="btn-action btn-cast">📺 Cast</button>' : '') +
+                '<button class="btn-action btn-del">Delete</button>' +
+              '</div>';
+
+            if (canPreview) {
+              item.querySelector('.btn-preview').addEventListener('click', function() {
+                previewFile(file.name, displayName);
+              });
+            }
+            item.querySelector('.btn-copy').addEventListener('click', function() {
+              copyFileLink(file.name, displayName, item.querySelector('.btn-copy'));
+            });
+            item.querySelector('.btn-dl').addEventListener('click', function() { downloadFile(file.name, displayName); });
+            item.querySelector('.btn-share').addEventListener('click', function() { shareFile(file.name, displayName, item.querySelector('.btn-share')); });
+            if (showCast) {
+              item.querySelector('.btn-cast').addEventListener('click', function() {
+                castFile(file.name, displayName, item.querySelector('.btn-cast'));
+              });
+            }
+            item.querySelector('.btn-del').addEventListener('click', function() { deleteFile(file.name, item); });
+            fileList.appendChild(item);
+          });
+        });
+      }
+
+      function downloadFile(fileName, displayName) {
+        client.storage.from(BUCKET).download(fileName).then(function(result) {
+          if (result.error) { alert('Download failed'); return; }
+          var url = URL.createObjectURL(result.data);
+          var a = document.createElement('a');
+          a.href = url; a.download = displayName; a.click();
+          URL.revokeObjectURL(url);
+        });
+      }
+
+      function shareFile(fileName, displayName, btn) {
+        if (!navigator.share) { alert('Sharing is not supported on this browser.'); return; }
+        btn.disabled = true; btn.textContent = '...';
+        client.storage.from(BUCKET).download(fileName).then(function(result) {
+          if (result.error) { alert('Share failed'); btn.disabled = false; btn.textContent = 'Share'; return; }
+          var file = new File([result.data], displayName, { type: result.data.type || 'application/octet-stream' });
+          navigator.share({ files: [file], title: displayName })
+            .catch(function() {})
+            .finally(function() { btn.disabled = false; btn.textContent = 'Share'; });
+        });
+      }
+
+      function deleteFile(fileName, item) {
+        item.style.opacity = '0'; item.style.transition = 'opacity 0.3s';
+        client.storage.from(BUCKET).remove([fileName]).then(function(result) {
+          if (result.error) { item.style.opacity = '1'; alert('Delete failed'); return; }
+          setTimeout(function() { item.remove(); loadFiles(); }, 300);
+        });
+      }
+
+      function copyFileLink(fileName, displayName, btn) {
+        var orig = btn.textContent;
+        btn.textContent = '...';
+        client.storage.from(BUCKET).createSignedUrl(fileName, 604800).then(function(result) {
+          if (result.error || !result.data) {
+            btn.textContent = 'Error';
+            setTimeout(function() { btn.textContent = orig; }, 1500);
+            return;
+          }
+          var link = result.data.signedUrl;
+          function onCopied() {
+            btn.textContent = '✓ Copied!';
+            btn.classList.add('copied');
+            setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 2200);
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(onCopied).catch(function() { fallbackCopy(link); onCopied(); });
+          } else {
+            fallbackCopy(link); onCopied();
+          }
+        });
+      }
+
+      function fallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(ta);
+      }
+
+      function previewFile(fileName, displayName) {
+        var ext = displayName.split('.').pop().toLowerCase();
+        previewTitle.textContent = displayName;
+        previewIcon.textContent = getFileIcon(fileName);
+        previewBody.innerHTML = '<div class="preview-loading">Loading preview…</div>';
+        previewOverlay.classList.add('open');
+
+        var isImage = ['jpg','jpeg','png','gif','webp','svg'].indexOf(ext) > -1;
+        var isPdf   = ext === 'pdf';
+        var isText  = ['txt','md','json','xml','csv','html','css','js','ts','py','log','yaml','yml'].indexOf(ext) > -1;
+
+        if (!isImage && !isPdf && !isText) {
+          previewBody.innerHTML =
+            '<div class="no-preview"><span class="big-icon">' + getFileIcon(fileName) + '</span>' +
+            'No preview available for .' + ext + ' files</div>';
+          return;
+        }
+
+        client.storage.from(BUCKET).download(fileName).then(function(result) {
+          if (result.error) {
+            previewBody.innerHTML = '<div class="no-preview"><span class="big-icon">⚠</span>Preview failed</div>';
+            return;
+          }
+          var blob = result.data;
+          var url  = URL.createObjectURL(blob);
+          previewBody.innerHTML = '';
+
+          if (isImage) {
+            var img = document.createElement('img');
+            img.src = url; img.alt = displayName;
+            img.onload = function() { URL.revokeObjectURL(url); };
+            previewBody.appendChild(img);
+          } else if (isPdf) {
+            var iframe = document.createElement('iframe');
+            iframe.src = url;
+            previewBody.appendChild(iframe);
+          } else if (isText) {
+            blob.text().then(function(txt) {
+              URL.revokeObjectURL(url);
+              var pre = document.createElement('pre');
+              var MAX = 8000;
+              pre.textContent = txt.length > MAX
+                ? txt.substring(0, MAX) + '\n\n… (preview truncated — download for full file)'
+                : txt;
+              previewBody.appendChild(pre);
+            });
+          }
+        });
+      }
+
+      function closePreview() {
+        previewOverlay.classList.remove('open');
+        setTimeout(function() { previewBody.innerHTML = ''; }, 200);
+      }
+      previewClose.addEventListener('click', closePreview);
+      previewOverlay.addEventListener('click', function(e) { if (e.target === previewOverlay) closePreview(); });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { closePreview(); closeAdmin(); }
+      });
+
+      /* ===== FONT PREVIEW ===== */
+      function getFontFamilyId(name) {
+        return 'BCF_' + name.replace(/[^A-Za-z0-9]/g, '_');
+      }
+      function getFontDisplayName(filename) {
+        return filename.replace(/\.(ttf|otf|woff2?)$/i, '');
+      }
+      function injectFontFace(family, blobUrl) {
+        var styleId = 'font-face-' + family;
+        var style = document.getElementById(styleId);
+        if (!style) {
+          style = document.createElement('style');
+          style.id = styleId;
+          document.head.appendChild(style);
+        }
+        style.textContent = '@font-face { font-family: "' + family + '"; src: url("' + blobUrl + '"); font-display: swap; }';
+      }
+      function renderFontPreviews() {
+        var text = fontTextInput.value || 'Your text here';
+        var thread = threadColor.value;
+        var fabric = fabricColor.value;
+        var size = sizeSlider.value;
+
+        fontCount.textContent = loadedFonts.length + (loadedFonts.length === 1 ? ' font' : ' fonts');
+
+        if (loadedFonts.length === 0) {
+          fontPreviews.innerHTML =
+            '<div class="font-empty">' +
+              '<span class="font-empty-icon">✦</span>' +
+              '<h4>No fonts available yet</h4>' +
+              '<p>check back soon</p>' +
+            '</div>';
+          return;
+        }
+
+        fontPreviews.innerHTML = loadedFonts.map(function(f) {
+          return '<div class="font-preview-card" style="background:' + fabric + '">' +
+            '<div class="font-preview-name">' + escapeHtml(f.name) + '</div>' +
+            '<div class="font-preview-text" style="font-family:\'' + f.family + '\', serif; color:' + thread + '; font-size:' + size + 'px">' + escapeHtml(text) + '</div>' +
+          '</div>';
+        }).join('');
+      }
+      function loadFontOrder() {
+        return client.storage.from(BUCKET).download(FONT_ORDER_FILE).then(function(result) {
+          if (result.error) { fontOrder = []; return; }
+          return result.data.text().then(function(txt) {
+            try {
+              var parsed = JSON.parse(txt);
+              fontOrder = Array.isArray(parsed) ? parsed : [];
+            } catch (e) { fontOrder = []; }
+          });
+        }).catch(function() { fontOrder = []; });
+      }
+
+      function saveFontOrder() {
+        var json = JSON.stringify(fontOrder);
+        var blob = new Blob([json], { type: 'application/json' });
+        return client.storage.from(BUCKET).upload(FONT_ORDER_FILE, blob, { upsert: true });
+      }
+
+      function sortFontsByOrder(fonts, getFileName) {
+        // Fonts in fontOrder come first (in that order), rest sorted alphabetically after
+        var sorted = [];
+        var seen = {};
+        fontOrder.forEach(function(fname) {
+          var found = fonts.filter(function(f) { return getFileName(f) === fname; })[0];
+          if (found) { sorted.push(found); seen[fname] = true; }
+        });
+        var rest = fonts.filter(function(f) { return !seen[getFileName(f)]; });
+        rest.sort(function(a, b) { return getFileName(a).localeCompare(getFileName(b)); });
+        return sorted.concat(rest);
+      }
+
+      function loadFontsFromSupabase() {
+        loadFontOrder().then(function() {
+          client.storage.from(BUCKET).list(FONTS_FOLDER).then(function(result) {
+            if (result.error || !result.data || result.data.length === 0) {
+              loadedFonts = [];
+              renderFontPreviews();
+              return;
+            }
+            var fontFiles = result.data.filter(function(f) {
+              return f.name && /\.(ttf|otf|woff2?)$/i.test(f.name);
+            });
+            if (fontFiles.length === 0) {
+              loadedFonts = [];
+              renderFontPreviews();
+              return;
+            }
+            var newFonts = [];
+            var remaining = fontFiles.length;
+            fontFiles.forEach(function(f) {
+              var path = FONTS_FOLDER + '/' + f.name;
+              client.storage.from(BUCKET).download(path).then(function(dl) {
+                remaining--;
+                if (!dl.error && dl.data) {
+                  var blobUrl = URL.createObjectURL(dl.data);
+                  var family = getFontFamilyId(f.name);
+                  var displayName = getFontDisplayName(f.name);
+                  injectFontFace(family, blobUrl);
+                  newFonts.push({ name: displayName, family: family, blobUrl: blobUrl, fileName: f.name });
+                }
+                if (remaining === 0) {
+                  loadedFonts = sortFontsByOrder(newFonts, function(f) { return f.fileName; });
+                  renderFontPreviews();
+                }
+              });
+            });
+          });
+        });
+      }
+      fontTextInput.addEventListener('input', renderFontPreviews);
+      threadColor.addEventListener('input', function() { threadColorValue.textContent = threadColor.value; renderFontPreviews(); });
+      fabricColor.addEventListener('input', function() { fabricColorValue.textContent = fabricColor.value; renderFontPreviews(); });
+      sizeSlider.addEventListener('input', function() { sizeValue.textContent = sizeSlider.value; renderFontPreviews(); });
+
+      /* ===== ADMIN ===== */
+      function openAdmin() {
+        adminOverlay.classList.add('open');
+        adminGate.style.display = 'flex';
+        adminPanel.style.display = 'none';
+        adminPassword.value = '';
+        adminError.textContent = '';
+        setTimeout(function() { adminPassword.focus(); }, 100);
+      }
+      function closeAdmin() { adminOverlay.classList.remove('open'); }
+      adminOpenBtn.addEventListener('click', openAdmin);
+      adminClose.addEventListener('click', closeAdmin);
+      adminOverlay.addEventListener('click', function(e) { if (e.target === adminOverlay) closeAdmin(); });
+
+      function tryUnlock() {
+        if (adminPassword.value === ADMIN_PASSWORD) {
+          adminGate.style.display = 'none';
+          adminPanel.style.display = 'flex';
+          adminError.textContent = '';
+          renderAdminFontList();
+        } else {
+          adminError.textContent = 'Incorrect password';
+          adminPassword.value = '';
+          adminPassword.focus();
+        }
+      }
+      adminSubmit.addEventListener('click', tryUnlock);
+      adminPassword.addEventListener('keydown', function(e) { if (e.key === 'Enter') tryUnlock(); });
+
+      adminFontDrop.addEventListener('click', function() { adminFontInput.click(); });
+      adminFontDrop.addEventListener('dragover', function(e) { e.preventDefault(); adminFontDrop.classList.add('dragging'); });
+      adminFontDrop.addEventListener('dragleave', function() { adminFontDrop.classList.remove('dragging'); });
+      adminFontDrop.addEventListener('drop', function(e) {
+        e.preventDefault();
+        adminFontDrop.classList.remove('dragging');
+        handleAdminFontFiles(e.dataTransfer.files);
+      });
+      adminFontInput.addEventListener('change', function(e) {
+        handleAdminFontFiles(e.target.files);
+        adminFontInput.value = '';
+      });
+
+      function handleAdminFontFiles(files) {
+        var arr = Array.prototype.slice.call(files);
+        var valid = arr.filter(function(f) { return /\.(ttf|otf|woff2?)$/i.test(f.name); });
+        if (valid.length === 0) {
+          adminStatus.textContent = 'No valid font files';
+          setTimeout(function() { adminStatus.textContent = ''; }, 2200);
+          return;
+        }
+        function next(i) {
+          if (i >= valid.length) {
+            adminStatus.textContent = '✓ Done';
+            setTimeout(function() {
+              adminStatus.textContent = '';
+              renderAdminFontList();
+              loadFontsFromSupabase();
+            }, 800);
+            return;
+          }
+          uploadFont(valid[i], function() { next(i + 1); });
+        }
+        next(0);
+      }
+
+      function uploadFont(file, callback) {
+        adminStatus.textContent = 'Uploading ' + file.name + '…';
+        var path = FONTS_FOLDER + '/' + file.name;
+        client.storage.from(BUCKET).upload(path, file, { upsert: true }).then(function(result) {
+          if (result.error) {
+            adminStatus.textContent = 'Failed: ' + result.error.message;
+            setTimeout(function() { adminStatus.textContent = ''; }, 2500);
+          }
+          if (callback) callback();
+        });
+      }
+
+      function renderAdminFontList() {
+        client.storage.from(BUCKET).list(FONTS_FOLDER).then(function(result) {
+          if (result.error || !result.data || result.data.length === 0) {
+            adminFontList.innerHTML = '<div class="admin-empty">No fonts uploaded yet</div>';
+            return;
+          }
+          var fonts = result.data.filter(function(f) { return /\.(ttf|otf|woff2?)$/i.test(f.name); });
+          if (fonts.length === 0) {
+            adminFontList.innerHTML = '<div class="admin-empty">No fonts uploaded yet</div>';
+            return;
+          }
+
+          // Sort by saved order, append unordered alphabetically
+          var sorted = sortFontsByOrder(fonts, function(f) { return f.name; });
+          // Sync the order array to reflect current state (in case fonts were added/removed externally)
+          fontOrder = sorted.map(function(f) { return f.name; });
+
+          adminFontList.innerHTML = sorted.map(function(f, i) {
+            var atTop = i === 0;
+            var atBottom = i === sorted.length - 1;
+            return '<div class="admin-font-item">' +
+              '<span class="admin-font-item-name">' + f.name + '</span>' +
+              '<div class="admin-font-item-actions">' +
+                '<button class="admin-font-move" data-action="up" data-name="' + f.name + '" title="Move up"' + (atTop ? ' disabled' : '') + '>↑</button>' +
+                '<button class="admin-font-move" data-action="down" data-name="' + f.name + '" title="Move down"' + (atBottom ? ' disabled' : '') + '>↓</button>' +
+                '<button class="admin-font-del" data-name="' + f.name + '">Remove</button>' +
+              '</div>' +
+            '</div>';
+          }).join('');
+
+          adminFontList.querySelectorAll('.admin-font-del').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+              var fontName = btn.dataset.name;
+              if (!confirm('Remove "' + fontName + '"?')) return;
+              client.storage.from(BUCKET).remove([FONTS_FOLDER + '/' + fontName]).then(function(result) {
+                if (result.error) { alert('Could not remove font'); return; }
+                fontOrder = fontOrder.filter(function(n) { return n !== fontName; });
+                saveFontOrder().then(function() {
+                  renderAdminFontList();
+                  loadFontsFromSupabase();
+                });
+              });
+            });
+          });
+
+          adminFontList.querySelectorAll('.admin-font-move').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+              if (btn.disabled) return;
+              var fontName = btn.dataset.name;
+              var action = btn.dataset.action;
+              var idx = fontOrder.indexOf(fontName);
+              if (idx === -1) return;
+              if (action === 'up' && idx > 0) {
+                var tmp = fontOrder[idx - 1];
+                fontOrder[idx - 1] = fontOrder[idx];
+                fontOrder[idx] = tmp;
+              } else if (action === 'down' && idx < fontOrder.length - 1) {
+                var tmp = fontOrder[idx + 1];
+                fontOrder[idx + 1] = fontOrder[idx];
+                fontOrder[idx] = tmp;
+              } else {
+                return;
+              }
+              saveFontOrder().then(function() {
+                renderAdminFontList();
+                loadFontsFromSupabase();
+              });
+            });
+          });
+        });
+      }
+
+      /* ===== INIT ===== */
+      loadFiles();
+      loadFontsFromSupabase();
+      setInterval(loadFiles, 10000);
+    });
+  </script>
+</body>
+</html>
