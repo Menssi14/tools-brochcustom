@@ -1652,7 +1652,7 @@
     state.folders=state.folders.filter(function(f){return ids.indexOf(f.id)&lt;0;});
   }
 
-  var MOCKUP_URL = &quot;https://model.brochcustom.com/&quot;;
+  var MOCKUP_URL = (function(){ try{ return window.top.location.origin + &quot;/model/&quot;; }catch(e){ return &quot;https://tools.brochcustom.com/model/&quot;; } })();
 
   function sendToMockup(dataURL){
     if(!dataURL){ toast(&quot;No image to preview&quot;); return; }
