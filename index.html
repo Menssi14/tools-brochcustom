@@ -1198,6 +1198,7 @@
   }
   function loadCatalog(){
     if(!sb){ _loaded = true; render(); return; }
+    showLoading();
     sb.storage.from(BUCKET).download(CATALOG_FILE).then(function(res){
       if(res &amp;&amp; res.data){
         res.data.text().then(function(txt){
@@ -1213,10 +1214,27 @@
           migrateLegacySvgs();
         });
       } else {
-        // nothing saved yet — keep the seed folders, mark loaded, and save the seed once
-        _loaded = true; render(); persist();
+        // No data. ONLY treat this as &quot;first run&quot; if Supabase explicitly says the file
+        // doesn't exist. A network hiccup must NOT overwrite the real catalog with seeds.
+        var msg = (res &amp;&amp; res.error &amp;&amp; (res.error.message||res.error.error||'')) + '';
+        var notFound = /not.?found|400|404|does not exist/i.test(msg);
+        if(notFound){
+          _loaded = true; render(); persist();   // genuine first run: seed and save once
+        } else {
+          showLoadError();                        // ambiguous failure: don't touch anything
+        }
       }
-    }).catch(function(){ _loaded = true; render(); });
+    }).catch(function(){ showLoadError(); });
+  }
+  function showLoading(){
+    app.innerHTML='&lt;div class=&quot;empty&quot; style=&quot;padding-top:70px&quot;&gt;&lt;div class=&quot;e-big&quot;&gt;Loading catalog\u2026&lt;/div&gt;&lt;div class=&quot;e-sm&quot;&gt;One moment.&lt;/div&gt;&lt;/div&gt;';
+  }
+  function showLoadError(){
+    // _loaded stays false on purpose: saving is disabled so nothing can be overwritten.
+    app.innerHTML='&lt;div class=&quot;empty&quot; style=&quot;padding-top:70px&quot;&gt;&lt;div class=&quot;e-big&quot;&gt;Couldn\u2019t load the catalog&lt;/div&gt;'+
+      '&lt;div class=&quot;e-sm&quot;&gt;Check your connection, then try again.&lt;/div&gt;'+
+      '&lt;button id=&quot;retryLoad&quot; style=&quot;margin-top:16px;background:var(--forest);color:var(--cream);border:none;border-radius:999px;padding:11px 26px;font-family:\'Oswald\',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:15px;cursor:pointer;&quot;&gt;Try again&lt;/button&gt;&lt;/div&gt;';
+    var b=document.getElementById('retryLoad'); if(b) b.addEventListener('click', loadCatalog);
   }
 
   function uid(p){ return p+Math.random().toString(36).slice(2,9); }
@@ -1276,11 +1294,11 @@
   }
 
   // ---------- compression ----------
-  function compressImage(file){
+  function compressImage(file, maxPx){
     return new Promise(function(resolve){
       var img=new Image(),url=URL.createObjectURL(file);
       img.onload=function(){
-        var max=1400,w=img.naturalWidth,h=img.naturalHeight;
+        var max=maxPx||900,w=img.naturalWidth,h=img.naturalHeight;
         if(w&gt;max||h&gt;max){ var r=Math.min(max/w,max/h); w=Math.round(w*r); h=Math.round(h*r); }
         var c=document.createElement(&quot;canvas&quot;); c.width=w; c.height=h;
         var ctx=c.getContext(&quot;2d&quot;); ctx.drawImage(img,0,0,w,h);
@@ -1296,7 +1314,7 @@
             c2.getContext(&quot;2d&quot;).drawImage(c,minX,minY,cw,ch,0,0,cw,ch); c=c2;
           }
         }catch(e){}
-        var out; try{ out=c.toDataURL(&quot;image/webp&quot;,0.92); if(out.indexOf(&quot;data:image/webp&quot;)!==0) out=c.toDataURL(&quot;image/png&quot;); }catch(e){ out=c.toDataURL(&quot;image/png&quot;); }
+        var out; try{ out=c.toDataURL(&quot;image/webp&quot;,0.85); if(out.indexOf(&quot;data:image/webp&quot;)!==0) out=c.toDataURL(&quot;image/png&quot;); }catch(e){ out=c.toDataURL(&quot;image/png&quot;); }
         URL.revokeObjectURL(url); resolve(out);
       };
       img.onerror=function(){ URL.revokeObjectURL(url); resolve(null); };
@@ -1437,7 +1455,7 @@
   });
 
   function setCoverFile(folderId,file){
-    compressImage(file).then(function(src){ if(src){ var f=folderById(folderId); if(f){ f.cover=src; render(); persist(); toast(&quot;Cover set&quot;); } } });
+    compressImage(file, 700).then(function(src){ if(src){ var f=folderById(folderId); if(f){ f.cover=src; render(); persist(); toast(&quot;Cover set&quot;); } } });
   }
 
   // ---------- render ----------
@@ -1634,7 +1652,7 @@
     state.folders=state.folders.filter(function(f){return ids.indexOf(f.id)&lt;0;});
   }
 
-  var MOCKUP_URL = &quot;https://tools.brochcustom.com/model&quot;;
+  var MOCKUP_URL = &quot;https://model.brochcustom.com/&quot;;
 
   function sendToMockup(dataURL){
     if(!dataURL){ toast(&quot;No image to preview&quot;); return; }
