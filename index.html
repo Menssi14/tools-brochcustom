@@ -3132,9 +3132,17 @@ document.addEventListener('DOMContentLoaded', function() {
   var navShare = document.getElementById('navShare');
   var navShareLabel = document.getElementById('navShareLabel');
   navShare.addEventListener('click', function() {
-    // figure out which tab is currently showing
+    // figure out which tool is currently showing
     var activePanel = document.querySelector('.tab-panel.active');
-    var tab = (activePanel && activePanel.id === 'tab-fonts') ? 'fonts' : 'files';
+    var tab = activePanel ? activePanel.id.replace('tab-', '') : 'catalog';
+    var activeBtn = document.querySelector('.tab-btn.active');
+    var toolName = activeBtn ? activeBtn.textContent.trim() : 'Tools';
+    var shareTexts = {
+      catalog: 'Browse the Broch Custom design catalog',
+      fonts: 'Preview your name in our embroidery fonts',
+      files: 'Send us your files',
+      dst: 'View embroidery stitch files right in the browser'
+    };
     var shareUrl = window.location.origin + window.location.pathname + '#' + tab;
 
     function flash(msg) {
@@ -3145,8 +3153,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (navigator.share) {
       navigator.share({
-        title: 'Broch Custom Tools',
-        text: tab === 'fonts' ? 'Preview your name in our embroidery fonts' : 'Send us your files',
+        title: 'Broch Custom \u2014 ' + toolName,
+        text: shareTexts[tab] || ('Check out ' + toolName),
         url: shareUrl
       }).catch(function() {});
     } else if (navigator.clipboard && navigator.clipboard.writeText) {
