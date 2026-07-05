@@ -136,6 +136,8 @@
   .tab-btn:hover { color: var(--green); }
   .tab-btn.active { color: var(--cream); }
   .tab-link { text-decoration: none; }
+  .mockup-frame-wrap { width: 100%; height: min(80vh, 760px); border-radius: 12px; overflow: hidden; background: var(--cream, #F2EADD); }
+  .mockup-frame { width: 100%; height: 100%; border: 0; display: block; }
   .tab-link:hover { color: var(--green); }
 
   /* ===== DST VIEWER ===== */
@@ -946,7 +948,7 @@
 <div class="tabs" id="tabNav">
   <span class="tab-slider" id="tabSlider"></span>
   <button class="tab-btn active" data-tab="catalog">Catalog</button>
-  <a class="tab-btn tab-link" href="https://tools.brochcustom.com/model" target="_blank" rel="noopener">Mockup</a>
+  <button class="tab-btn" data-tab="mockup">Mockup</button>
   <button class="tab-btn" data-tab="fonts">Font preview</button>
   <button class="tab-btn" data-tab="files">File sharing</button>
   <button class="tab-btn" data-tab="dst">DST viewer</button>
@@ -1737,6 +1739,12 @@
 &lt;/body&gt;
 &lt;/html&gt;
 "></iframe>
+    </div>
+  </section>
+
+  <section id="tab-mockup" class="tab-panel">
+    <div class="mockup-frame-wrap">
+      <iframe id="mockupFrame" class="mockup-frame" title="3D Mockup" loading="lazy" data-src="model/"></iframe>
     </div>
   </section>
 
@@ -3085,6 +3093,11 @@ document.addEventListener('DOMContentLoaded', function() {
           try { cf.contentWindow.dispatchEvent(new Event('resize')); } catch (e) {}
         }, 60);
       }
+    }
+    if (tabName === 'mockup') {
+      // load the (heavy) 3D engine only on first open, never on page load
+      var mf = document.getElementById('mockupFrame');
+      if (mf && !mf.src && mf.getAttribute('data-src')) { mf.src = mf.getAttribute('data-src'); }
     }
     if (history.replaceState) history.replaceState(null, '', '#' + tabName);
   }
