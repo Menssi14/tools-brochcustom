@@ -72,6 +72,7 @@
     cursor: pointer;
     transition: opacity 0.2s;
   }
+  .nav-brand { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .nav-brand:hover { opacity: 0.82; }
   .nav-brand small {
     font-family: 'Teko', sans-serif;
@@ -1024,7 +1025,7 @@
 <body>
 
 <nav class="nav">
-  <a class="nav-brand" href="https://brochcustom.com/" target="_blank" rel="noopener">Broch Custom <small>tools</small></a>
+  <a class="nav-brand" id="navBrand" href="https://brochcustom.com/" target="_blank" rel="noopener">Broch Custom <small>tools</small></a>
   <button class="nav-share" id="navShare" type="button">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
     <span id="navShareLabel">Share</span>
@@ -1240,13 +1241,16 @@
     .design-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:13px;}
     .cat-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
   }
+  /* drag-to-reorder (admin only) */
+  body.is-admin .cat-card{ touch-action:none; }
+  .cat-card.dragging{ opacity:.9; transform:scale(1.05); box-shadow:0 14px 34px rgba(0,0,0,.3); z-index:5; cursor:grabbing; }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 &lt;/style&gt;
 &lt;/head&gt;
 &lt;body&gt;
 &lt;div class=&quot;embed-adminbar&quot;&gt;&lt;button class=&quot;admin-pill&quot; id=&quot;adminPill&quot;&gt;&amp;#9998; Editing &amp;mdash; Done&lt;/button&gt;&lt;/div&gt;
 &lt;main id=&quot;app&quot;&gt;&lt;/main&gt;
-&lt;button class=&quot;embed-adminlink&quot; id=&quot;adminLink&quot;&gt;Admin&lt;/button&gt;
+&lt;button class=&quot;embed-adminlink&quot; id=&quot;adminLink&quot; style=&quot;display:none&quot;&gt;Admin&lt;/button&gt;
 &lt;div class=&quot;toast&quot; id=&quot;toast&quot;&gt;&lt;/div&gt;
 &lt;input type=&quot;file&quot; id=&quot;fileInput&quot; accept=&quot;.svg,.png,.jpg,.jpeg,.webp,image/*&quot; multiple style=&quot;display:none&quot;&gt;
 
@@ -1356,6 +1360,61 @@
   function folderDesigns(fid){ return state.designs.filter(function(d){return d.folderId===fid;}); }
   function descendantIds(fid){
     var out=[]; (function rec(p){ childFolders(p).forEach(function(c){out.push(c.id);rec(c.id);}); })(fid); return out;
+  }
+
+  // ── Drag a category to reorder it. Works with a finger or a mouse.
+  //    Press and hold a card for a moment, then drag. This order is what the SHOP shows too.
+  var _suppressOpen = false;
+  function enableDragSort(){
+    var grid = app.querySelector(&quot;.cat-grid&quot;);
+    if(!grid) return;
+    var dragEl = null, timer = null, moved = false;
+
+    grid.addEventListener(&quot;click&quot;, function(e){
+      if(_suppressOpen){ e.stopPropagation(); e.preventDefault(); _suppressOpen = false; }
+    }, true);
+
+    [].slice.call(grid.querySelectorAll(&quot;.cat-card[data-open]&quot;)).forEach(function(card){
+      card.addEventListener(&quot;pointerdown&quot;, function(e){
+        if(e.target.closest(&quot;.cat-admin&quot;)) return;      // the On/Rename/Delete buttons
+        clearTimeout(timer);
+        timer = setTimeout(function(){
+          dragEl = card; moved = false;
+          card.classList.add(&quot;dragging&quot;);
+          try{ card.setPointerCapture(e.pointerId); }catch(_){}
+        }, 280);
+      });
+      card.addEventListener(&quot;pointermove&quot;, function(e){
+        if(!dragEl) return;
+        e.preventDefault();
+        moved = true;
+        var el = document.elementFromPoint(e.clientX, e.clientY);
+        var over = el &amp;&amp; el.closest ? el.closest(&quot;.cat-card[data-open]&quot;) : null;
+        if(over &amp;&amp; over !== dragEl &amp;&amp; over.parentNode === grid){
+          var r = over.getBoundingClientRect();
+          var after = e.clientX &gt; r.left + r.width / 2;
+          grid.insertBefore(dragEl, after ? over.nextSibling : over);
+        }
+      });
+      [&quot;pointerup&quot;,&quot;pointercancel&quot;,&quot;lostpointercapture&quot;].forEach(function(ev){
+        card.addEventListener(ev, function(){
+          clearTimeout(timer);
+          if(!dragEl) return;
+          dragEl.classList.remove(&quot;dragging&quot;);
+          dragEl = null;
+          _suppressOpen = true;                          // don't open the folder we just dropped
+          if(moved) commitOrder(grid);
+        });
+      });
+    });
+  }
+  function commitOrder(grid){
+    var ids = [].slice.call(grid.querySelectorAll(&quot;.cat-card[data-open]&quot;))
+                .map(function(c){ return c.getAttribute(&quot;data-open&quot;); });
+    var moved = ids.map(folderById).filter(Boolean);
+    var rest  = state.folders.filter(function(f){ return moved.indexOf(f) &lt; 0; });
+    state.folders = moved.concat(rest);                  // subfolders keep their own order
+    render(); persist(); toast(&quot;Order saved&quot;);
   }
 
   function baseName(n){ return n.replace(/\.(png|jpe?g|svg|webp)$/i,&quot;&quot;).trim(); }
@@ -1702,6 +1761,8 @@
 
     if(!state.admin) return;
 
+    enableDragSort();
+
     var addF=document.getElementById(&quot;addFolder&quot;);
     if(addF) addF.addEventListener(&quot;click&quot;,function(){
       promptText(&quot;New category&quot;,&quot;Name this season or theme&quot;,&quot;&quot;,function(name){
@@ -1812,9 +1873,15 @@
     input.addEventListener(&quot;keydown&quot;,function(e){ if(e.key===&quot;Enter&quot;) ok(); });
   }
 
-  document.getElementById(&quot;adminLink&quot;).addEventListener(&quot;click&quot;,function(){
+  // No visible admin button. The page around this catalog signals us when the
+  // BROCH CUSTOM wordmark is pressed and held; then we ask for the password.
+  window.addEventListener(&quot;message&quot;,function(e){
+    if(e.data!==&quot;bc-admin&quot;) return;
     if(state.admin){ state.admin=false; render(); toast(&quot;Editing off&quot;); return; }
     askPassword(function(v){ if(v===&quot;0214&quot;){ state.admin=true; render(); toast(&quot;Editing on&quot;); } else if(v) toast(&quot;Wrong password&quot;); });
+  });
+  document.getElementById(&quot;adminLink&quot;).addEventListener(&quot;click&quot;,function(){
+    if(state.admin){ state.admin=false; render(); toast(&quot;Editing off&quot;); return; }
   });
   document.getElementById(&quot;adminPill&quot;).addEventListener(&quot;click&quot;,function(){ state.admin=false; render(); toast(&quot;Editing off&quot;); });
 
@@ -3114,6 +3181,26 @@ document.addEventListener('DOMContentLoaded', function() {
   ];
   // ⚠ CHANGE THIS to your own password.
   var ADMIN_PASSWORD = '0214';
+
+  // Press and hold the wordmark to unlock catalog editing. No visible button.
+  (function () {
+    var brand = document.getElementById('navBrand');
+    if (!brand) return;
+    var timer = null, fired = false;
+    function start() {
+      fired = false; clearTimeout(timer);
+      timer = setTimeout(function () {
+        fired = true;
+        var f = document.getElementById('catalogFrame');
+        if (f && f.contentWindow) f.contentWindow.postMessage('bc-admin', '*');
+      }, 700);
+    }
+    function cancel() { clearTimeout(timer); }
+    brand.addEventListener('pointerdown', start);
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { brand.addEventListener(ev, cancel); });
+    brand.addEventListener('click', function (e) { if (fired) { e.preventDefault(); fired = false; } });
+    brand.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  })();
 
   var client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
