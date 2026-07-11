@@ -61,29 +61,19 @@
     z-index: 100;
     box-shadow: 0 2px 12px rgba(22,56,41,0.15);
   }
-  .nav-brand {
-    font-family: 'Schadow', 'EB Garamond', Garamond, serif;
-    color: var(--cream);
-    font-size: 28px;
-    letter-spacing: 0.03em;
-    font-weight: normal;
-    line-height: 1;
-    text-decoration: none;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-  .nav-brand { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-  .nav-brand:hover { opacity: 0.82; }
-  .nav-brand small {
-    font-family: 'Teko', sans-serif;
-    color: var(--pink);
-    font-size: 13px;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    margin-left: 12px;
-    font-weight: 500;
-    vertical-align: 5px;
-  }
+  /* ── shared footer (same in the shop, the orders app and the tools app) ── */
+  .bc-foot{ background:#163829; color:rgba(242,234,221,.82); text-align:center;
+    padding:28px 20px; margin-top:50px; display:flex; flex-direction:column; align-items:center; gap:6px;
+    font-family:'EB Garamond',Georgia,serif; font-size:14px; }
+  .bc-foot a{ color:#F4B5B0; text-decoration:none; }
+  .bc-foot a:hover{ color:#F2EADD; }
+  .bc-foot .bc-fine{ font-style:italic; font-size:12px; opacity:.6; }
+  .nav-brand{ font-family:'Schadow','Teko',sans-serif; text-transform:uppercase; font-weight:900;
+    font-size:27px; letter-spacing:.02em; line-height:.92; color:var(--cream); white-space:nowrap;
+    display:flex; flex-direction:column; text-decoration:none; cursor:pointer;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .nav-brand:hover{ color:#fff; opacity:1; }
+  .nav-brand small{ font-family:'Teko',sans-serif; font-size:12px; letter-spacing:.34em; font-weight:700; color:var(--pink); margin-top:0; }
 
   /* ===== TABS (bubble slider) ===== */
   .tabs {
@@ -999,8 +989,6 @@
   /* ===== MOBILE ===== */
   @media (max-width: 720px) {
     .nav { padding: 12px 16px; }
-    .nav-brand { font-size: 21px; }
-    .nav-brand small { display: none; }
     .nav-share { padding: 6px 12px; font-size: 12px; letter-spacing: 0.1em; gap: 5px; }
     .nav-share svg { width: 13px; height: 13px; }
     .tabs { margin: 18px 16px 18px; max-width: calc(100% - 32px); padding: 4px; }
@@ -1025,7 +1013,7 @@
 <body>
 
 <nav class="nav">
-  <a class="nav-brand" id="navBrand" href="https://brochcustom.com/" target="_blank" rel="noopener">Broch Custom <small>tools</small></a>
+  <a class="nav-brand" id="navBrand" href="https://brochcustom.com/" target="_blank" rel="noopener">Broch Custom<small>Tools</small></a>
   <button class="nav-share" id="navShare" type="button">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
     <span id="navShareLabel">Share</span>
@@ -1242,7 +1230,8 @@
     .cat-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}
   }
   /* drag-to-reorder (admin only) */
-  body.is-admin .cat-card{ touch-action:none; }
+  body.is-admin .cat-card{ touch-action:none; -webkit-user-select:none; user-select:none; cursor:grab; }
+  body.is-admin .cat-card *{ -webkit-user-select:none; user-select:none; }
   .cat-card.dragging{ opacity:.9; transform:scale(1.05); box-shadow:0 14px 34px rgba(0,0,0,.3); z-index:5; cursor:grabbing; }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 &lt;/style&gt;
@@ -1375,8 +1364,11 @@
     }, true);
 
     [].slice.call(grid.querySelectorAll(&quot;.cat-card[data-open]&quot;)).forEach(function(card){
+      card.addEventListener(&quot;dragstart&quot;, function(e){ e.preventDefault(); });
+      card.addEventListener(&quot;selectstart&quot;, function(e){ if(dragEl) e.preventDefault(); });
       card.addEventListener(&quot;pointerdown&quot;, function(e){
         if(e.target.closest(&quot;.cat-admin&quot;)) return;      // the On/Rename/Delete buttons
+        if(e.button !== undefined &amp;&amp; e.button !== 0) return;   // left button / touch only
         clearTimeout(timer);
         timer = setTimeout(function(){
           dragEl = card; moved = false;
@@ -1876,9 +1868,8 @@
   // No visible admin button. The page around this catalog signals us when the
   // BROCH CUSTOM wordmark is pressed and held; then we ask for the password.
   window.addEventListener(&quot;message&quot;,function(e){
-    if(e.data!==&quot;bc-admin&quot;) return;
-    if(state.admin){ state.admin=false; render(); toast(&quot;Editing off&quot;); return; }
-    askPassword(function(v){ if(v===&quot;0214&quot;){ state.admin=true; render(); toast(&quot;Editing on&quot;); } else if(v) toast(&quot;Wrong password&quot;); });
+    if(e.data===&quot;bc-admin-on&quot; &amp;&amp; !state.admin){ state.admin=true; render(); toast(&quot;Editing on&quot;); }
+    if(e.data===&quot;bc-admin-off&quot; &amp;&amp; state.admin){ state.admin=false; render(); toast(&quot;Editing off&quot;); }
   });
   document.getElementById(&quot;adminLink&quot;).addEventListener(&quot;click&quot;,function(){
     if(state.admin){ state.admin=false; render(); toast(&quot;Editing off&quot;); return; }
@@ -3149,13 +3140,9 @@ fitCanvas();
   </div>
 </div>
 
-<footer>
-  <div class="footer-links">
-    <a href="https://brochcustom.com/" target="_blank">&larr; Main page</a>
-    <span class="dot" id="footerAdminDot" style="display:none">&middot;</span>
-    <button class="footer-link-btn" id="adminOpenBtn" style="display:none">Fonts admin</button>
-  </div>
-  <p class="footer-fine">&copy; Broch Custom &middot; Edinburg, TX</p>
+<footer class="bc-foot">
+  <div>Broch Custom &middot; Edinburg, TX &middot; <a href="tel:+19562255859">(956) 225-5859</a></div>
+  <div class="bc-fine">&copy; <span class="bc-year"></span> Broch Custom</div>
 </footer>
 
 <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
@@ -3182,6 +3169,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // ⚠ CHANGE THIS to your own password.
   var ADMIN_PASSWORD = '0214';
 
+  document.querySelectorAll('.bc-year').forEach(function(e){ e.textContent = new Date().getFullYear(); });
+
   // Press and hold the wordmark to unlock catalog editing. No visible button.
   (function () {
     var brand = document.getElementById('navBrand');
@@ -3191,9 +3180,8 @@ document.addEventListener('DOMContentLoaded', function() {
       fired = false; clearTimeout(timer);
       timer = setTimeout(function () {
         fired = true;
-        var f = document.getElementById('catalogFrame');
-        if (f && f.contentWindow) f.contentWindow.postMessage('bc-admin', '*');
-      }, 700);
+        openAdmin();                       // one password box for the whole Tools app
+      }, 2000);
     }
     function cancel() { clearTimeout(timer); }
     brand.addEventListener('pointerdown', start);
@@ -3225,7 +3213,6 @@ document.addEventListener('DOMContentLoaded', function() {
   var sizeValue         = document.getElementById('sizeValue');
   var fontPreviews      = document.getElementById('fontPreviews');
   var fontCount         = document.getElementById('fontCount');
-  var adminOpenBtn   = document.getElementById('adminOpenBtn');
   var adminOverlay   = document.getElementById('adminOverlay');
   var adminClose     = document.getElementById('adminClose');
   var adminGate      = document.getElementById('adminGate');
@@ -3256,10 +3243,6 @@ document.addEventListener('DOMContentLoaded', function() {
     panel.classList.add('active');
     positionTabSlider();
     // the footer admin only manages fonts, so only surface it on the fonts tab
-    var _fa = document.getElementById('adminOpenBtn');
-    var _fad = document.getElementById('footerAdminDot');
-    if (_fa) _fa.style.display = (tabName === 'fonts') ? '' : 'none';
-    if (_fad) _fad.style.display = (tabName === 'fonts') ? '' : 'none';
     if (tabName === 'fonts' && !fontsLoaded) loadFontsFromSupabase();
     if (tabName === 'dst') {
       // the canvas inside the iframe measures itself; poke it once the panel is visible
@@ -3975,7 +3958,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() { adminPassword.focus(); }, 100);
   }
   function closeAdmin() { adminOverlay.classList.remove('open'); }
-  adminOpenBtn.addEventListener('click', openAdmin);
   adminClose.addEventListener('click', closeAdmin);
   adminOverlay.addEventListener('click', function(e) { if (e.target === adminOverlay) closeAdmin(); });
 
@@ -3985,6 +3967,9 @@ document.addEventListener('DOMContentLoaded', function() {
       adminPanel.style.display = 'flex';
       adminError.textContent = '';
       renderAdminFontList();
+      // the catalog runs in its own frame — turn its editing on too, no second password
+      var cf = document.getElementById('catalogFrame');
+      if (cf && cf.contentWindow) cf.contentWindow.postMessage('bc-admin-on', '*');
     } else {
       adminError.textContent = 'Incorrect password';
       adminPassword.value = '';
