@@ -3171,7 +3171,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.querySelectorAll('.bc-year').forEach(function(e){ e.textContent = new Date().getFullYear(); });
 
-  // Press and hold the wordmark to unlock catalog editing. No visible button.
+  // Press and hold the wordmark to unlock editing. No visible button.
+  var toolsAdminOn = false;
+  function currentTab() {
+    var p = document.querySelector('.tab-panel.active');
+    return p ? p.id.replace('tab-', '') : 'catalog';
+  }
+  function adminNote(msg) {
+    var n = document.getElementById('bcAdminNote');
+    if (!n) {
+      n = document.createElement('div');
+      n.id = 'bcAdminNote';
+      n.style.cssText = 'position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#1F4D3E;color:#F2EADD;' +
+        'font-family:Teko,Oswald,sans-serif;font-size:16px;letter-spacing:.08em;text-transform:uppercase;' +
+        'padding:9px 22px;border-radius:999px;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.25);transition:opacity .3s;';
+      document.body.appendChild(n);
+    }
+    n.textContent = msg; n.style.opacity = '1';
+    clearTimeout(n._t); n._t = setTimeout(function(){ n.style.opacity = '0'; }, 2200);
+  }
   (function () {
     var brand = document.getElementById('navBrand');
     if (!brand) return;
@@ -3180,7 +3198,12 @@ document.addEventListener('DOMContentLoaded', function() {
       fired = false; clearTimeout(timer);
       timer = setTimeout(function () {
         fired = true;
-        openAdmin();                       // one password box for the whole Tools app
+        if (!toolsAdminOn) { openAdmin(); return; }          // locked → password gate
+        if (currentTab() === 'fonts') { openAdmin(); return; } // unlocked, on Fonts → the panel
+        toolsAdminOn = false;                                  // unlocked elsewhere → editing off
+        var cf = document.getElementById('catalogFrame');
+        if (cf && cf.contentWindow) cf.contentWindow.postMessage('bc-admin-off', '*');
+        adminNote('Editing off');
       }, 2000);
     }
     function cancel() { clearTimeout(timer); }
@@ -3963,13 +3986,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function tryUnlock() {
     if (adminPassword.value === ADMIN_PASSWORD) {
-      adminGate.style.display = 'none';
-      adminPanel.style.display = 'flex';
+      toolsAdminOn = true;
       adminError.textContent = '';
-      renderAdminFontList();
       // the catalog runs in its own frame — turn its editing on too, no second password
       var cf = document.getElementById('catalogFrame');
       if (cf && cf.contentWindow) cf.contentWindow.postMessage('bc-admin-on', '*');
+      if (currentTab() === 'fonts') {
+        adminGate.style.display = 'none';
+        adminPanel.style.display = 'flex';
+        renderAdminFontList();
+      } else {
+        closeAdmin();                 // no fonts panel outside the Fonts tab
+        adminNote('Editing on');
+      }
     } else {
       adminError.textContent = 'Incorrect password';
       adminPassword.value = '';
