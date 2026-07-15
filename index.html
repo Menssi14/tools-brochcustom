@@ -132,6 +132,28 @@
   .tab-link:hover { color: var(--green); }
 
   /* ===== DST VIEWER ===== */
+  .viewer-overlay{ position:fixed; inset:0; z-index:300; background:var(--bg-cream-deep,#EBE6D8);
+    display:none; flex-direction:column; }
+  .viewer-overlay.show{ display:flex; }
+  .viewer-bar{ display:flex; align-items:center; gap:12px; padding:10px 16px; background:var(--green);
+    color:var(--cream); flex:0 0 auto; }
+  .viewer-name{ font-family:'Teko','Oswald',sans-serif; font-size:19px; letter-spacing:.07em; text-transform:uppercase;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .viewer-close{ margin-left:auto; background:rgba(242,234,221,.15); border:none; color:var(--cream);
+    width:36px; height:36px; border-radius:10px; font-size:22px; line-height:1; cursor:pointer; flex:0 0 auto; }
+  .viewer-close:hover{ background:rgba(242,234,221,.3); }
+  .viewer-overlay .dst-frame-wrap{ flex:1 1 auto; min-height:0; height:auto !important;
+    border:none !important; border-radius:0 !important; box-shadow:none !important; }
+  .viewer-overlay .dst-frame{ width:100% !important; height:100% !important;
+    min-height:0 !important; max-height:none !important; }
+  /* clean, contextual icon actions on file rows */
+  .file-actions{ display:flex; gap:6px; flex:0 0 auto; margin-top:auto; padding-top:8px; justify-content:center; flex-wrap:wrap; }
+  .fbtn{ width:34px; height:34px; border-radius:10px; border:1px solid var(--line,#D8D0BE); background:#fffdf8;
+    color:var(--green); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.15s; padding:0; }
+  .fbtn:hover{ border-color:var(--green); background:rgba(31,77,62,.07); }
+  .fbtn.danger{ color:#C0554A; }
+  .fbtn.danger:hover{ border-color:#C0554A; background:rgba(192,85,74,.08); }
+  .fbtn.busy{ opacity:.45; pointer-events:none; }
   .dst-frame-wrap {
     border: 0.5px solid var(--line);
     border-radius: 8px;
@@ -330,48 +352,42 @@
     font-style: italic;
     color: var(--ink-soft);
   }
-  .file-list { display: flex; flex-direction: column; gap: 10px; }
+  .file-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 12px; }
+  .drop-veil { position: fixed; inset: 0; z-index: 250; display: none; align-items: center; justify-content: center;
+    background: rgba(31,77,62,.85); color: var(--cream); font-family: 'Teko','Oswald',sans-serif;
+    font-size: 30px; letter-spacing: .12em; text-transform: uppercase; pointer-events: none; }
+  #tab-files.dragging .drop-veil { display: flex; }
+  .upload-card { border: 2px dashed var(--green) !important; background: rgba(31,77,62,.04) !important;
+    cursor: pointer; align-items: center; justify-content: center; font: inherit; }
+  .upload-card:hover { background: rgba(31,77,62,.09) !important; }
+  .uc-plus { font-size: 34px; line-height: 1; color: var(--green); font-family: 'Teko',sans-serif; }
+  .uc-t { font-family: 'Teko','Oswald',sans-serif; font-size: 18px; letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
+  .uc-s { font-family: 'EB Garamond',serif; font-style: italic; font-size: 12.5px; color: rgba(74,52,36,.55); }
   .file-item {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
-    background: var(--cream-card);
-    border: 0.5px solid var(--line-soft);
-    border-radius: 4px;
-    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
-    flex-wrap: wrap;
+    background: var(--paper, #FBF7EE); border: 1.5px solid var(--line, #D8D0BE); border-radius: 14px;
+    padding: 0 0 10px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    cursor: pointer;
   }
-  .file-item:hover {
-    border-color: rgba(31,77,62,0.35);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(22,56,41,0.08);
-  }
-  .file-icon {
-    font-family: 'EB Garamond', serif;
-    font-size: 24px;
-    color: var(--green);
-    opacity: 0.7;
-    flex-shrink: 0;
-    width: 32px;
-    text-align: center;
-  }
-  .file-info { flex: 1; min-width: 200px; }
-  .file-name {
-    font-family: 'EB Garamond', serif;
-    font-size: 18px;
-    color: var(--ink);
-    word-break: break-word;
-  }
-  .file-meta {
-    font-family: 'Teko', sans-serif;
-    font-size: 12px;
-    letter-spacing: 0.12em;
-    color: var(--ink-soft);
-    text-transform: uppercase;
-    margin-top: 3px;
-    opacity: 0.7;
-  }
+  .file-figure { position: relative; width: 100%; height: 150px; display: flex; align-items: center; justify-content: center;
+    background: repeating-conic-gradient(#efe9db 0% 25%, #fffdf8 0% 50%) 0 0 / 16px 16px; margin-bottom: 7px; }
+  .file-item:hover { border-color: var(--green); box-shadow: 0 6px 18px rgba(31,77,62,.12); transform: translateY(-2px); }
+  .file-icon { font-size: 52px; line-height: 1; }
+  .file-thumb { width: 100%; height: 100%; object-fit: contain; }
+  /* actions live over the picture; they appear when you reach for them */
+  .file-actions { position: absolute; left: 0; right: 0; bottom: 0; margin: 0 !important; padding: 7px 6px 6px !important;
+    justify-content: center; background: linear-gradient(to top, rgba(22,40,32,.55), rgba(22,40,32,0));
+    opacity: 0; transition: opacity .15s; }
+  .file-item:hover .file-actions { opacity: 1; }
+  @media (hover: none) { .file-actions { opacity: 1; background: none; position: static; padding: 4px 6px 0 !important; } }
+  .fbtn { width: 30px; height: 30px; border-radius: 9px; }
+  .file-name { padding: 0 10px; }
+  .file-meta { padding: 0 10px; }
+  .upload-card { min-height: 208px; }
+  .file-info { flex: 1; min-width: 0; width: 100%; }
+  .file-name { font-family: 'Teko','Oswald',sans-serif; font-size: 16px; letter-spacing: .04em; color: var(--forest, #1F4D3E); line-height: 1.15; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .file-meta { font-family: 'EB Garamond',serif; font-style: italic; font-size: 12px; color: rgba(74,52,36,.55); }
   .file-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
   /* action buttons - warm pill style */
@@ -585,6 +601,10 @@
     border-radius: 2px;
     pointer-events: none;
   }
+  .font-preview-card.dark .font-preview-name { color: rgba(255,255,255,0.82); }
+  .font-preview-card.dark .font-preview-guide { border-color: rgba(255,255,255,0.16); }
+  .font-preview-card.dark .font-export-btn { color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,0.4); }
+  .font-preview-card.dark .font-export-btn:hover { background: rgba(255,255,255,0.12); }
   .font-preview-name {
     font-family: 'Teko', sans-serif;
     font-size: 12px;
@@ -994,7 +1014,6 @@
     .tabs { margin: 18px 16px 18px; max-width: calc(100% - 32px); padding: 4px; }
     .tab-btn { font-size: 15px; padding: 9px 15px; letter-spacing: 0.08em; }
     main { padding: 0 18px 20px; }
-    .upload-zone { padding: 32px 20px; }
     .upload-title { font-size: 22px; }
     .file-item { padding: 14px 14px; }
     .file-name { font-size: 16px; }
@@ -1023,35 +1042,22 @@
 <div class="tabs" id="tabNav">
   <span class="tab-slider" id="tabSlider"></span>
   <button class="tab-btn active" data-tab="catalog">Catalog</button>
-  <button class="tab-btn" data-tab="mockup">Model</button>
   <button class="tab-btn" data-tab="fonts">Font</button>
   <button class="tab-btn" data-tab="files">File</button>
-  <button class="tab-btn" data-tab="dst">Viewer</button>
+  <button class="tab-btn" data-tab="mockup">Model</button>
 </div>
 
 <main>
 
   <!-- ===== FILE SHARING ===== -->
-  <section id="tab-files" class="tab-panel">
-
-    <div class="upload-zone" id="dropZone">
-      <div class="upload-icon">&#8593;</div>
-      <div class="upload-title">Drop files <em>here</em></div>
-      <div class="upload-hint">browse your device or paste with Ctrl+V</div>
-      <button class="btn-solid" id="selectBtn">Select files</button>
-      <div class="progress-wrap" id="progressWrap">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
-      <div id="status"></div>
+  <section id="tab-files" class="tab-panel" >
+    <span id="fileCount" hidden></span>
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
     </div>
-
-    <div class="files-head">
-      <span class="overline">Stored Files</span>
-      <span class="files-count" id="fileCount">0 files</span>
-    </div>
-    <div class="file-list" id="fileList">
-      <div class="empty">No files uploaded yet</div>
-    </div>
+    <div id="status"></div>
+    <div class="file-list" id="fileList"></div>
+    <div class="drop-veil" id="dropVeil">Drop to upload</div>
   </section>
 
   <!-- ===== FONT PREVIEW ===== -->
@@ -1892,9 +1898,13 @@
     </div>
   </section>
 
-  <section id="tab-dst" class="tab-panel">
-    <div class="dst-frame-wrap">
-      <iframe id="dstFrame" class="dst-frame" title="DST Stitch Viewer" loading="lazy" srcdoc="&lt;!DOCTYPE html&gt;
+  <div class="viewer-overlay" id="viewerOverlay">
+  <div class="viewer-bar">
+    <span class="viewer-name" id="viewerName">Stitch viewer</span>
+    <button class="viewer-close" id="viewerClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="dst-frame-wrap">
+      <iframe id="dstFrame" class="dst-frame" title="DST Stitch Viewer" srcdoc="&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
 &lt;meta charset=&quot;UTF-8&quot;&gt;
@@ -2054,6 +2064,53 @@
   .pal-search-wrap{padding:10px 16px 14px;border-top:1px solid var(--line);background:rgba(255,255,255,.5);}
   .pal-search{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:9px;
     font-family:'EB Garamond',serif;font-size:16px;background:#fff;}
+
+  /* match the rest of the app: pills and catalog-style cards */
+  .btn{border-radius:999px;}
+  .btn.secondary{border-width:1.5px;}
+  .stat{background:#FBF7EE;border:1.5px solid var(--line);border-radius:14px;}
+  .sheet{border-radius:18px 18px 0 0;}
+  .tbtn{border-radius:12px;}
+  .dropnote{border-radius:14px;border-color:var(--green);background:rgba(31,77,62,.05);}
+
+  /* ═══ redesigned skin: same bones, the app's design language ═══ */
+  .toolbar{ background:var(--green); padding:7px 10px calc(7px + env(safe-area-inset-bottom,0)); gap:6px; display:flex; }
+  .tbtn{ border-radius:12px; font-size:12.5px; letter-spacing:1.2px; gap:4px; padding:8px 2px 7px;
+    color:rgba(242,234,221,.75); }
+  .tbtn:not(:last-child){ border-right:none; }
+  .tbtn.active{ background:rgba(242,234,221,.16); color:#F2EADD; }
+  .tbtn .ic{ width:22px; height:22px; }
+
+  .sheet{ border-top-left-radius:20px; border-top-right-radius:20px; background:#FBF7EE;
+    box-shadow:0 -10px 34px rgba(22,40,32,.24); border-top:1px solid rgba(31,77,62,.14); }
+  .sheet-head{ border-bottom:1px solid rgba(31,77,62,.12); }
+  .sheet-head .h{ letter-spacing:2.4px; font-size:17px; }
+  .sheet-x{ width:32px; height:32px; border-radius:10px; background:rgba(31,77,62,.07); color:var(--green);
+    font-size:17px; display:flex; align-items:center; justify-content:center; padding:0; }
+  .sheet-x:hover{ background:rgba(31,77,62,.14); }
+
+  .stat-grid{ gap:9px; }
+  .stat{ background:#fffdf8; border:1.5px solid var(--line); border-radius:14px; padding:11px 13px; }
+  .stat .k{ font-family:'Teko',sans-serif; text-transform:uppercase; letter-spacing:1.6px; font-size:11.5px;
+    color:rgba(74,52,36,.55); }
+  .stat .v{ font-family:'Teko',sans-serif; font-size:23px; color:var(--green); line-height:1.15; }
+  .stat .v small{ font-family:'EB Garamond',serif; font-style:italic; font-size:12.5px; color:rgba(74,52,36,.55); }
+
+  .btn{ border-radius:999px; box-shadow:0 2px 10px rgba(31,77,62,.18); }
+  .btn.secondary{ box-shadow:none; border-width:1.5px; }
+  input[type=range]{ accent-color:var(--green); height:28px; }
+  input[type=checkbox]{ accent-color:var(--green); width:17px; height:17px; }
+  .row label{ font-family:'Teko',sans-serif; text-transform:uppercase; letter-spacing:1.6px; font-size:13px;
+    color:rgba(74,52,36,.65); }
+  .muted-note{ background:rgba(31,77,62,.05); border:1px dashed rgba(31,77,62,.25); border-radius:11px;
+    padding:9px 12px; font-size:14px; }
+
+  .bg-swatches{ gap:9px; }
+  .bg-sw{ width:34px; height:34px; border-radius:12px; border:1.5px solid var(--line); }
+  .bg-sw:hover{ border-color:var(--green); transform:translateY(-1px); }
+
+  .dropnote{ border-radius:16px; }
+  .warnbar{ border-radius:11px; }
   .hidden{display:none !important;}
 &lt;/style&gt;
 &lt;/head&gt;
@@ -3081,12 +3138,61 @@ fitCanvas();
   // (their underlying buttons #dlBtn / #openBtn still exist inside the File panel and are reused)
 })();
 
+
+// ── Opened from the Files list: the page sends us a file to display ──
+var _lastOpenId = '';
+window.addEventListener('message', function(e){
+  var d = e.data;
+  if(!d || d.type !== 'BC_OPEN_FILE' || !d.buffer) return;
+  try { window.parent.postMessage({ type: 'BC_OPEN_ACK', id: d.id }, '*'); } catch(err) {}
+  if (d.id &amp;&amp; d.id === _lastOpenId) return;   // the retry of a send we already handled
+  _lastOpenId = d.id || '';
+  try { readFile(new File([d.buffer], d.name || 'design.dst')); } catch(err) {}
+});
+
+// ── Thumbnails for the Files grid: parse, draw small, send back ──
+window.addEventListener('message', function(e){
+  var d = e.data;
+  if(!d || d.type !== 'BC_THUMB' || !d.buffer) return;
+  try {
+    var r = parseDST(d.buffer);
+    var W = 300, H = 200, PAD = 14;
+    var c = document.createElement('canvas'); c.width = W; c.height = H;
+    var g = c.getContext('2d');
+    var b = r.bounds, dw = Math.max(1, b.maxX - b.minX), dh = Math.max(1, b.maxY - b.minY);
+    var k = Math.min((W - PAD * 2) / dw, (H - PAD * 2) / dh);
+    var ox = (W - dw * k) / 2 - b.minX * k, oy = (H - dh * k) / 2 - b.minY * k;
+    g.lineWidth = 1; g.lineCap = 'round';
+    // one color per thread block — same palette the big viewer uses
+    var pen = false, curBlock = -1;
+    g.beginPath();
+    for (var i = 0; i &lt; r.stitches.length; i++) {
+      var st = r.stitches[i];
+      var x = st.x * k + ox, y = H - (st.y * k + oy);   // flip Y — embroidery is bottom-up
+      var blk = st.block || 0;
+      if (blk !== curBlock) {
+        if (curBlock &gt;= 0) g.stroke();
+        g.beginPath();
+        g.strokeStyle = PALETTE[blk % PALETTE.length];
+        curBlock = blk; pen = false;
+      }
+      // pen down only for real stitches — jumps and color changes just move
+      if (st.type !== 'stitch' || !pen) { g.moveTo(x, y); pen = true; }
+      else g.lineTo(x, y);
+    }
+    g.stroke();
+    window.parent.postMessage({ type: 'BC_THUMB_RESULT', id: d.id, dataUrl: c.toDataURL('image/png') }, '*');
+  } catch (err) {
+    window.parent.postMessage({ type: 'BC_THUMB_RESULT', id: d.id, dataUrl: '' }, '*');
+  }
+});
+try { window.parent.postMessage('BC_DST_READY', '*'); } catch(e) {}
 &lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;
 "></iframe>
     </div>
-  </section>
+  </div>
 
 </main>
 
@@ -3215,9 +3321,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   var client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  var dropZone     = document.getElementById('dropZone');
+  var dropZone     = document.getElementById('tab-files');   // the WHOLE tab accepts drops
   var fileInput    = document.getElementById('fileInput');
-  var selectBtn    = document.getElementById('selectBtn');
+
   var fileList     = document.getElementById('fileList');
   var fileCount    = document.getElementById('fileCount');
   var progressWrap = document.getElementById('progressWrap');
@@ -3397,17 +3503,50 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     return map[ext] || 'application/octet-stream';
   }
+  // ── Stitch viewer, opened from a file row ──
+  var _openAcked = {};
+  window.addEventListener('message', function(e){
+    if (e.data && e.data.type === 'BC_OPEN_ACK') _openAcked[e.data.id] = true;
+  });
+  function _sendToViewer(msg) {
+    var f = document.getElementById('dstFrame');
+    if (f && f.contentWindow) f.contentWindow.postMessage(msg, '*');
+  }
+  function openStitchViewer(fileName, displayName, btn) {
+    document.getElementById('viewerName').textContent = displayName;
+    document.getElementById('viewerOverlay').classList.add('show');
+    if (btn) btn.classList.add('busy');
+    client.storage.from(BUCKET).download(fileName).then(function(result) {
+      if (btn) btn.classList.remove('busy');
+      if (result.error || !result.data) { alert('Could not load that file.'); return; }
+      result.data.arrayBuffer().then(function(buf) {
+        var id = 'o' + Math.random().toString(36).slice(2);
+        var msg = { type: 'BC_OPEN_FILE', id: id, name: displayName, buffer: buf };
+        _sendToViewer(msg);                                            // now
+        setTimeout(function(){ if (!_openAcked[id]) _sendToViewer(msg); }, 500);   // and again if unheard
+        setTimeout(function(){
+          if (!_openAcked[id]) alert('The viewer did not respond — close it and try again.');
+          delete _openAcked[id];
+        }, 2500);
+      });
+    }).catch(function(){ if (btn) btn.classList.remove('busy'); alert('Could not load that file.'); });
+  }
+  document.getElementById('viewerClose').addEventListener('click', function(){
+    document.getElementById('viewerOverlay').classList.remove('show');
+  });
+
   function castFile(fileName, displayName, btn) {
     if (!castSupported) {
       alert('Cast is only available on Google Chrome with a Chromecast device on the same Wi-Fi network.');
       return;
     }
     var ext = displayName.split('.').pop().toLowerCase();
-    var origText = btn.textContent;
-    btn.textContent = '...';
+    var origText = btn.innerHTML;
+    btn.classList.add('busy');
     client.storage.from(BUCKET).createSignedUrl(fileName, 7200).then(function(result) {
+      btn.classList.remove('busy');
       if (result.error || !result.data) {
-        btn.textContent = origText;
+        btn.innerHTML = origText;
         alert('Could not get file link for casting');
         return;
       }
@@ -3415,7 +3554,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var ctx = cast.framework.CastContext.getInstance();
       function loadMedia() {
         var session = ctx.getCurrentSession();
-        if (!session) { btn.textContent = origText; return; }
+        if (!session) { btn.innerHTML = origText; return; }
         var mediaInfo = new chrome.cast.media.MediaInfo(fileUrl, getMimeType(ext));
         mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
         mediaInfo.metadata.title = displayName;
@@ -3424,10 +3563,10 @@ document.addEventListener('DOMContentLoaded', function() {
           function() {
             btn.textContent = '✓ Casting';
             btn.classList.add('casting');
-            setTimeout(function() { btn.textContent = origText; btn.classList.remove('casting'); }, 3000);
+            setTimeout(function() { btn.innerHTML = origText; btn.classList.remove('casting'); }, 3000);
           },
           function(err) {
-            btn.textContent = origText;
+            btn.innerHTML = origText;
             alert('Cast failed: ' + (err && err.description ? err.description : 'unknown error'));
           }
         );
@@ -3438,7 +3577,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.requestSession().then(
           function() { loadMedia(); },
           function(err) {
-            btn.textContent = origText;
+            btn.innerHTML = origText;
             if (err !== 'cancel') console.warn('Cast session failed', err);
           }
         );
@@ -3447,10 +3586,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   /* ===== UPLOADS ===== */
-  selectBtn.addEventListener('click', function(e) { e.stopPropagation(); fileInput.click(); });
+  // the upload card in the grid triggers the picker (bound in renderUploadCard)
   fileInput.addEventListener('change', function(e) { handleFiles(e.target.files); fileInput.value = ''; });
   dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragging'); });
-  dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragging'); });
+  dropZone.addEventListener('dragleave', function(e) { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('dragging'); });
   dropZone.addEventListener('drop', function(e) { e.preventDefault(); dropZone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
   document.addEventListener('paste', function(e) {
     if (!document.getElementById('tab-files').classList.contains('active')) return;
@@ -3495,14 +3634,14 @@ document.addEventListener('DOMContentLoaded', function() {
   function getFileIcon(name) {
     var ext = name.split('.').pop().toLowerCase();
     if (['jpg','jpeg','png','gif','webp','svg','bmp'].indexOf(ext) > -1) return '◇';
-    if (ext === 'pdf') return '▤';
+    if (ext === 'pdf') return '\uD83D\uDCC4';
     if (['zip','rar','7z','tar','gz'].indexOf(ext) > -1) return '▦';
     if (['mp4','mov','avi','mkv','webm','m4v'].indexOf(ext) > -1) return '▷';
-    if (['mp3','wav','flac','aac','m4a','ogg'].indexOf(ext) > -1) return '♪';
-    if (['doc','docx'].indexOf(ext) > -1) return '▥';
+    if (['mp3','wav','flac','aac','m4a','ogg'].indexOf(ext) > -1) return '\uD83C\uDFB5';
+    if (['doc','docx'].indexOf(ext) > -1) return '\uD83D\uDCC4';
     if (['xls','xlsx','csv'].indexOf(ext) > -1) return '▤';
     if (['ttf','otf','woff','woff2'].indexOf(ext) > -1) return 'ƒ';
-    if (['txt','md','json','xml','html','css','js'].indexOf(ext) > -1) return '▥';
+    if (['txt','md','json','xml','html','css','js'].indexOf(ext) > -1) return '\uD83D\uDCC4';
     return '◆';
   }
   function formatSize(bytes) {
@@ -3523,10 +3662,120 @@ document.addEventListener('DOMContentLoaded', function() {
 
   /* ===== FILE LIST ===== */
   var lastFileFingerprint = null;
+  // ── Real previews on the cards ──
+  // Same approach as the catalog: fetch the actual image data (the exact
+  // call the Share and Download buttons already use), show it directly.
+  // Downloaded once per file, then remembered — reopening the tab is free.
+  var THUMB_EXTS = ['jpg','jpeg','png','gif','webp','svg','dst'];
+  var _thumbCache = {};                       // storage name -> local picture
+  var _thumbAsks = {};                        // pending stitch renders, by id
+  window.addEventListener('message', function(e){
+    var d = e.data;
+    if (!d || d.type !== 'BC_THUMB_RESULT') return;
+    var cb = _thumbAsks[d.id]; delete _thumbAsks[d.id];
+    if (cb) cb(d.dataUrl || '');
+  });
+  function hydrateThumbs(data) {
+    var queue = data.filter(function(f) {
+      var ext = f.name.replace(/^\d+_/, '').split('.').pop().toLowerCase();
+      return THUMB_EXTS.indexOf(ext) > -1;
+    }).map(function(f) { return f.name; });
+
+    function setThumb(name, url) {
+      var card = fileList.querySelector('[data-fname="' + name.replace(/"/g, '') + '"]');
+      if (!card) return;
+      var icon = card.querySelector('.file-icon');
+      if (!icon) return;
+      var img = new Image();
+      img.className = 'file-thumb';
+      img.alt = '';
+      img.onload = function() { icon.replaceWith(img); };
+      img.src = url;
+    }
+
+    var i = 0, RUNNING = 0, LANES = 2;        // two at a time — fast but polite
+    function next() {
+      while (RUNNING < LANES && i < queue.length) {
+        (function(name) {
+          RUNNING++;
+          if (_thumbCache[name]) { setThumb(name, _thumbCache[name]); RUNNING--; next(); return; }
+          client.storage.from(BUCKET).download(name).then(function(result) {
+            if (result.error || !result.data) { RUNNING--; next(); return; }
+            var ext = name.replace(/^\d+_/, '').split('.').pop().toLowerCase();
+            if (ext === 'dst') {
+              // stitches need drawing — the viewer's parser renders it for us
+              result.data.arrayBuffer().then(function(buf) {
+                var id = 't' + Math.random().toString(36).slice(2);
+                var timer = setTimeout(function() { delete _thumbAsks[id]; RUNNING--; next(); }, 8000);
+                _thumbAsks[id] = function(dataUrl) {
+                  clearTimeout(timer); RUNNING--;
+                  if (dataUrl) { _thumbCache[name] = dataUrl; setThumb(name, dataUrl); }
+                  next();
+                };
+                _sendToViewer({ type: 'BC_THUMB', id: id, buffer: buf });
+              });
+              return;
+            }
+            RUNNING--;
+            var url = URL.createObjectURL(result.data);
+            _thumbCache[name] = url;
+            setThumb(name, url);
+            next();
+          }).catch(function() { RUNNING--; next(); });
+        })(queue[i++]);
+      }
+    }
+    next();
+  }
+
+  // ── Copy an image straight to the clipboard, ready to paste anywhere ──
+  // Clipboards only accept PNG, so jpg/webp are redrawn as PNG on the fly.
+  function copyImageToClipboard(fileName, btn) {
+    var orig = btn.innerHTML;
+    btn.classList.add('busy');
+    client.storage.from(BUCKET).download(fileName).then(function(result) {
+      if (result.error || !result.data) throw new Error('download');
+      var blob = result.data;
+      var toPng = (blob.type === 'image/png')
+        ? Promise.resolve(blob)
+        : new Promise(function(resolve, reject) {
+            var img = new Image();
+            img.onload = function() {
+              var c = document.createElement('canvas');
+              c.width = img.naturalWidth; c.height = img.naturalHeight;
+              c.getContext('2d').drawImage(img, 0, 0);
+              c.toBlob(function(b) { b ? resolve(b) : reject(new Error('convert')); }, 'image/png');
+            };
+            img.onerror = reject;
+            img.src = URL.createObjectURL(blob);
+          });
+      return toPng.then(function(png) {
+        return navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+      });
+    }).then(function() {
+      btn.classList.remove('busy');
+      btn.innerHTML = '\u2713';
+      setTimeout(function() { btn.innerHTML = orig; }, 1800);
+    }).catch(function() {
+      btn.classList.remove('busy');
+      alert('Could not copy that image — you can Download it instead.');
+    });
+  }
+
+  function makeUploadCard() {
+    var c = document.createElement('button');
+    c.type = 'button';
+    c.className = 'file-item upload-card';
+    c.innerHTML = '<span class="uc-plus">+</span><span class="uc-t">Upload</span><span class="uc-s">or drop files anywhere</span>';
+    c.addEventListener('click', function() { fileInput.click(); });
+    return c;
+  }
+
   function loadFiles(force) {
     client.storage.from(BUCKET).list('', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } }).then(function(result) {
       if (result.error || !result.data) {
-        fileList.innerHTML = '<div class="empty">No files uploaded yet</div>';
+        fileList.innerHTML = '';
+        fileList.appendChild(makeUploadCard());
         fileCount.textContent = '0 files';
         lastFileFingerprint = null;
         return;
@@ -3539,11 +3788,8 @@ document.addEventListener('DOMContentLoaded', function() {
       lastFileFingerprint = fingerprint;
 
       fileList.innerHTML = '';
-      if (data.length === 0) {
-        fileList.innerHTML = '<div class="empty">No files uploaded yet</div>';
-        fileCount.textContent = '0 files';
-        return;
-      }
+      fileList.appendChild(makeUploadCard());
+      if (data.length === 0) { fileCount.textContent = '0 files'; return; }
       fileCount.textContent = data.length + (data.length === 1 ? ' file' : ' files');
 
       data.forEach(function(file) {
@@ -3554,31 +3800,67 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var item = document.createElement('div');
         item.className = 'file-item';
+        item.setAttribute('data-fname', file.name);
+        // One row, only the buttons that make sense for THIS file type:
+        //   .dst / .svg  → stitch viewer          images/pdf/text → quick preview
+        //   everyone     → share (or copy-link where sharing isn't supported),
+        //                  download, delete. Cast only where it can work.
+        var isStitch = (ext === 'dst');   // svg is an image here — it previews like one
+        var ICONS = {
+          view:  '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20v-8M12 12L5 5M12 12l7-7"/><circle cx="12" cy="20" r="1.6"/></svg>',
+          eye:   '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+          share: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8l7.4-4.2M8.3 13.2l7.4 4.2"/></svg>',
+          clip:  '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 00-2-2H5a2 2 0 00-2 2v9a2 2 0 002 2h3"/></svg>',
+          link:  '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9.5 14.5a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14.5 9.5a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>',
+          dl:    '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',
+          cast:  '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 16.5A5.5 5.5 0 017.5 22M2 12a10 10 0 0110 10M2 8a14 14 0 0114 14h6V4H2v4z" fill="none"/></svg>',
+          del:   '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>'
+        };
+        var isImage = ['jpg','jpeg','png','gif','webp'].indexOf(ext) > -1;
+        var canClip = isImage && navigator.clipboard && window.ClipboardItem;
+        var acts = '';
+        if (isStitch)          acts += '<button class="fbtn btn-view" title="Open in the stitch viewer">' + ICONS.eye + '</button>';
+        else if (canPreview)   acts += '<button class="fbtn btn-preview" title="Preview">' + ICONS.eye + '</button>';
+        if (canClip)           acts += '<button class="fbtn btn-clip" title="Copy image — paste it anywhere">' + ICONS.clip + '</button>';
+        acts += navigator.share
+          ? '<button class="fbtn btn-share" title="Share">' + ICONS.share + '</button>'
+          : '<button class="fbtn btn-copy" title="Copy link (good for 7 days)">' + ICONS.link + '</button>';
+        acts += '<button class="fbtn btn-dl" title="Download">' + ICONS.dl + '</button>';
+        if (showCast) acts += '<button class="fbtn btn-cast" title="Cast to TV">' + ICONS.cast + '</button>';
+        acts += '<button class="fbtn danger btn-del" title="Delete">' + ICONS.del + '</button>';
+
         item.innerHTML =
-          '<span class="file-icon">' + getFileIcon(file.name) + '</span>' +
+          '<div class="file-figure"><span class="file-icon">' + getFileIcon(file.name) + '</span>' +
+          '<div class="file-actions">' + acts + '</div></div>' +
           '<div class="file-info">' +
             '<div class="file-name">' + escapeHtml(displayName) + '</div>' +
             '<div class="file-meta">' + formatSize(file.metadata && file.metadata.size) + '</div>' +
-          '</div>' +
-          '<div class="file-actions">' +
-            (canPreview ? '<button class="btn-action btn-preview">Preview</button>' : '') +
-            '<button class="btn-action btn-copy">Copy Link</button>' +
-            '<button class="btn-action btn-dl">Download</button>' +
-            '<button class="btn-action btn-share">Share</button>' +
-            (showCast ? '<button class="btn-action btn-cast">Cast</button>' : '') +
-            '<button class="btn-action btn-del">Delete</button>' +
           '</div>';
 
-        if (canPreview) {
+        // tap the card itself to open it, Explorer-style
+        item.querySelector('.file-actions').addEventListener('click', function(e){ e.stopPropagation(); });
+        item.addEventListener('click', function() {
+          if (isStitch) openStitchViewer(file.name, displayName, null);
+          else if (canPreview) previewFile(file.name, displayName);
+          else downloadFile(file.name, displayName);
+        });
+
+        if (isStitch) {
+          item.querySelector('.btn-view').addEventListener('click', function() {
+            openStitchViewer(file.name, displayName, item.querySelector('.btn-view'));
+          });
+        } else if (canPreview) {
           item.querySelector('.btn-preview').addEventListener('click', function() {
             previewFile(file.name, displayName);
           });
         }
-        item.querySelector('.btn-copy').addEventListener('click', function() {
-          copyFileLink(file.name, displayName, item.querySelector('.btn-copy'));
-        });
+        var cl = item.querySelector('.btn-clip');
+        if (cl) cl.addEventListener('click', function() { copyImageToClipboard(file.name, cl); });
+        var cp = item.querySelector('.btn-copy');
+        if (cp) cp.addEventListener('click', function() { copyFileLink(file.name, displayName, cp); });
+        var sh = item.querySelector('.btn-share');
+        if (sh) sh.addEventListener('click', function() { shareFile(file.name, displayName, sh); });
         item.querySelector('.btn-dl').addEventListener('click', function() { downloadFile(file.name, displayName); });
-        item.querySelector('.btn-share').addEventListener('click', function() { shareFile(file.name, displayName, item.querySelector('.btn-share')); });
         if (showCast) {
           item.querySelector('.btn-cast').addEventListener('click', function() {
             castFile(file.name, displayName, item.querySelector('.btn-cast'));
@@ -3587,6 +3869,7 @@ document.addEventListener('DOMContentLoaded', function() {
         item.querySelector('.btn-del').addEventListener('click', function() { deleteFile(file.name, displayName, item); });
         fileList.appendChild(item);
       });
+      hydrateThumbs(data);
     });
   }
 
@@ -3602,13 +3885,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function shareFile(fileName, displayName, btn) {
     if (!navigator.share) { alert('Sharing is not supported on this browser.'); return; }
-    btn.disabled = true; btn.textContent = '...';
+    btn.disabled = true; btn.classList.add('busy');
     client.storage.from(BUCKET).download(fileName).then(function(result) {
-      if (result.error) { alert('Share failed'); btn.disabled = false; btn.textContent = 'Share'; return; }
+      if (result.error) { alert('Share failed'); btn.disabled = false; btn.classList.remove('busy'); return; }
       var file = new File([result.data], displayName, { type: result.data.type || 'application/octet-stream' });
       navigator.share({ files: [file], title: displayName })
         .catch(function() {})
-        .finally(function() { btn.disabled = false; btn.textContent = 'Share'; });
+        .finally(function() { btn.disabled = false; btn.classList.remove('busy'); });
     });
   }
 
@@ -3622,19 +3905,20 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function copyFileLink(fileName, displayName, btn) {
-    var orig = btn.textContent;
-    btn.textContent = '...';
+    var orig = btn.innerHTML;
+    btn.classList.add('busy');
     client.storage.from(BUCKET).createSignedUrl(fileName, 604800).then(function(result) {
+      btn.classList.remove('busy');
       if (result.error || !result.data) {
-        btn.textContent = 'Error';
-        setTimeout(function() { btn.textContent = orig; }, 1500);
+        btn.innerHTML = '!';
+        setTimeout(function() { btn.innerHTML = orig; }, 1500);
         return;
       }
       var link = result.data.signedUrl;
       function onCopied() {
-        btn.textContent = '✓ Copied · 7 days';
+        btn.innerHTML = '\u2713';
         btn.classList.add('copied');
-        setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 2600);
+        setTimeout(function() { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2200);
       }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(link).then(onCopied).catch(function() { fallbackCopy(link); onCopied(); });
@@ -3745,8 +4029,16 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    function isDarkColor(hex) {
+      var m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+      if (!m) return false;
+      var n = parseInt(m[1], 16);
+      var lum = 0.2126 * (n >> 16 & 255) + 0.7152 * (n >> 8 & 255) + 0.0722 * (n & 255);
+      return lum < 140;
+    }
+    var darkCls = isDarkColor(fabric) ? ' dark' : '';
     function cardHtml(f, idx) {
-      return '<div class="font-preview-card" style="background:' + fabric + '">' +
+      return '<div class="font-preview-card' + darkCls + '" style="background:' + fabric + '">' +
         '<div class="font-preview-name">' + escapeHtml(f.name) + '</div>' +
         '<div class="font-preview-text" style="font-family:\'' + f.family + '\', serif; color:' + thread + '; font-size:' + size + 'px">' + escapeHtml(text) + '</div>' +
         '<button class="font-export-btn" type="button" data-export="' + idx + '">Export SVG</button>' +
