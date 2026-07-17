@@ -2192,6 +2192,11 @@
           &lt;div class=&quot;stat&quot;&gt;&lt;div class=&quot;k&quot;&gt;Jumps&lt;/div&gt;&lt;div class=&quot;v&quot; id=&quot;sJump&quot;&gt;–&lt;/div&gt;&lt;/div&gt;
           &lt;div class=&quot;stat&quot;&gt;&lt;div class=&quot;k&quot;&gt;Trims/stops&lt;/div&gt;&lt;div class=&quot;v&quot; id=&quot;sStop&quot;&gt;–&lt;/div&gt;&lt;/div&gt;
         &lt;/div&gt;
+        &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
+        &lt;button class=&quot;btn&quot; id=&quot;playBtn&quot;&gt;▶ Play&lt;/button&gt;
+        &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;row&quot;&gt;&lt;label for=&quot;speed&quot;&gt;Speed&lt;/label&gt;&lt;/div&gt;
+        &lt;input type=&quot;range&quot; id=&quot;speed&quot; min=&quot;1&quot; max=&quot;100&quot; step=&quot;1&quot; value=&quot;40&quot;&gt;
       &lt;/div&gt;
 
       &lt;div id=&quot;panel-view&quot; style=&quot;display:none&quot;&gt;
@@ -2200,7 +2205,14 @@
         &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
         &lt;div class=&quot;row&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;showJumps&quot;&gt;&lt;label for=&quot;showJumps&quot;&gt;Show jump / move lines&lt;/label&gt;&lt;/div&gt;
         &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
-        &lt;div class=&quot;row&quot;&gt;&lt;label&gt;Background&lt;/label&gt;&lt;/div&gt;
+        &lt;button class=&quot;btn secondary&quot; id=&quot;resetBtn&quot;&gt;Reset view&lt;/button&gt;
+      &lt;/div&gt;
+
+      &lt;div id=&quot;panel-colors&quot; style=&quot;display:none&quot;&gt;
+        &lt;div class=&quot;muted-note&quot; id=&quot;colorsNote&quot; style=&quot;margin-bottom:10px&quot;&gt;Tap a block to pick a real Madeira Classic Rayon 40 thread. The design stays visible behind this panel.&lt;/div&gt;
+        &lt;div class=&quot;colors&quot; id=&quot;colors&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;row&quot;&gt;&lt;label&gt;Fabric / background&lt;/label&gt;&lt;/div&gt;
         &lt;div class=&quot;bg-swatches&quot; id=&quot;bgSwatches&quot;&gt;
           &lt;button class=&quot;bg-sw&quot; data-bg=&quot;#EBE6D8&quot; style=&quot;background:#EBE6D8&quot; title=&quot;Cream&quot;&gt;&lt;/button&gt;
           &lt;button class=&quot;bg-sw&quot; data-bg=&quot;#FFFFFF&quot; style=&quot;background:#FFFFFF&quot; title=&quot;White&quot;&gt;&lt;/button&gt;
@@ -2211,20 +2223,6 @@
             &lt;input type=&quot;color&quot; id=&quot;bgCustom&quot; value=&quot;#EBE6D8&quot;&gt;
           &lt;/label&gt;
         &lt;/div&gt;
-        &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
-        &lt;button class=&quot;btn secondary&quot; id=&quot;resetBtn&quot;&gt;Reset view&lt;/button&gt;
-      &lt;/div&gt;
-
-      &lt;div id=&quot;panel-anim&quot; style=&quot;display:none&quot;&gt;
-        &lt;button class=&quot;btn&quot; id=&quot;playBtn&quot;&gt;▶ Play&lt;/button&gt;
-        &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
-        &lt;div class=&quot;row&quot;&gt;&lt;label for=&quot;speed&quot;&gt;Speed&lt;/label&gt;&lt;/div&gt;
-        &lt;input type=&quot;range&quot; id=&quot;speed&quot; min=&quot;1&quot; max=&quot;100&quot; step=&quot;1&quot; value=&quot;40&quot;&gt;
-      &lt;/div&gt;
-
-      &lt;div id=&quot;panel-colors&quot; style=&quot;display:none&quot;&gt;
-        &lt;div class=&quot;muted-note&quot; id=&quot;colorsNote&quot; style=&quot;margin-bottom:10px&quot;&gt;Tap a block to pick a real Madeira Classic Rayon 40 thread. The design stays visible behind this panel.&lt;/div&gt;
-        &lt;div class=&quot;colors&quot; id=&quot;colors&quot;&gt;&lt;/div&gt;
       &lt;/div&gt;
 
     &lt;/div&gt;
@@ -2244,10 +2242,6 @@
     &lt;button class=&quot;tbtn&quot; data-sheet=&quot;view&quot;&gt;
       &lt;svg class=&quot;ic&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;circle cx=&quot;11&quot; cy=&quot;11&quot; r=&quot;7&quot;/&gt;&lt;line x1=&quot;11&quot; y1=&quot;8&quot; x2=&quot;11&quot; y2=&quot;14&quot;/&gt;&lt;line x1=&quot;8&quot; y1=&quot;11&quot; x2=&quot;14&quot; y2=&quot;11&quot;/&gt;&lt;line x1=&quot;16.5&quot; y1=&quot;16.5&quot; x2=&quot;21&quot; y2=&quot;21&quot;/&gt;&lt;/svg&gt;
       View
-    &lt;/button&gt;
-    &lt;button class=&quot;tbtn&quot; data-sheet=&quot;anim&quot;&gt;
-      &lt;svg class=&quot;ic&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;currentColor&quot; stroke=&quot;none&quot;&gt;&lt;path d=&quot;M7 5l12 7-12 7z&quot;/&gt;&lt;/svg&gt;
-      Play
     &lt;/button&gt;
     &lt;button class=&quot;tbtn&quot; data-sheet=&quot;colors&quot;&gt;
       &lt;svg class=&quot;ic&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.6&quot;&gt;&lt;circle cx=&quot;9&quot; cy=&quot;9&quot; r=&quot;5&quot;/&gt;&lt;circle cx=&quot;15&quot; cy=&quot;9&quot; r=&quot;5&quot;/&gt;&lt;circle cx=&quot;12&quot; cy=&quot;15&quot; r=&quot;5&quot;/&gt;&lt;/svg&gt;
@@ -2270,7 +2264,7 @@
         &lt;/div&gt;
       &lt;/div&gt;
       &lt;div class=&quot;pal-grid&quot; id=&quot;palGrid&quot;&gt;&lt;/div&gt;
-      &lt;div class=&quot;pal-foot&quot; id=&quot;palFoot&quot;&gt;Tap a thread to apply it.&lt;/div&gt;
+      &lt;div class=&quot;pal-foot&quot; id=&quot;palFoot&quot;&gt;Madeira Classic Rayon shades &amp;mdash; for Polyneon &amp;amp; Neon cones, search by color name or tap &lt;b&gt;Custom&lt;/b&gt; and match the cone. Real neon glows brighter than any screen can show.&lt;/div&gt;
       &lt;div class=&quot;pal-search-wrap&quot;&gt;
         &lt;input class=&quot;pal-search&quot; id=&quot;palSearch&quot; placeholder=&quot;Can't find it? Search name or number…&quot; inputmode=&quot;search&quot;&gt;
       &lt;/div&gt;
@@ -2482,12 +2476,10 @@ function rebuildGeom(){
         let f=1-Math.abs(align);
         const bi=Math.max(0,Math.min(N_BUCKETS-1,Math.round(f*(N_BUCKETS-1))));
         const off=(bi/(N_BUCKETS-1)-0.5)*SHADE_SPREAD;
-        // subtle per-stitch positional jitter (perpendicular waver) so rows
-        // aren't perfectly aligned — breaks up the plastic look on flat fills
         const nx=-dy/len, ny=dx/len;
         const j1=((((i*374761393)&gt;&gt;&gt;0)%1000)/1000-0.5)*1.0;
         const j2=((((i*668265263+91)&gt;&gt;&gt;0)%1000)/1000-0.5)*1.0;
-        segs.push({i, b:p.block, off,
+        segs.push({i, b:p.block, off, dx:dx/len, dy:dy/len,
           x1:last.x+nx*j1, y1:last.y+ny*j1,
           x2:p.x   +nx*j2, y2:p.y   +ny*j2});
       }
@@ -2498,6 +2490,19 @@ function rebuildGeom(){
     }
     last=p;
   }
+  /* satin vs fill: satin zigzags — every stitch reverses direction; fill runs in
+     rows. A stitch is satin if most of its neighbourhood reverses. This is what
+     lets the renderer treat the two like different materials. */
+  const raw=new Array(segs.length);
+  for(let k=0;k&lt;segs.length;k++){
+    const sg=segs[k], pv=segs[k-1];
+    raw[k] = (pv &amp;&amp; pv.b===sg.b &amp;&amp; (sg.dx*pv.dx+sg.dy*pv.dy) &lt; -0.55) ? 1 : 0;
+  }
+  for(let k=0;k&lt;segs.length;k++){
+    let v=0,n=0;
+    for(let j=Math.max(0,k-3); j&lt;=Math.min(segs.length-1,k+3); j++){ v+=raw[j]; n++; }
+    segs[k].sat = (v/n) &gt; 0.45;
+  }
   geom={data:DATA, segs, jumpPath};
 }
 
@@ -2506,32 +2511,74 @@ function rebuildGeom(){
    where the needle penetrates the fabric. Smoothly blended, glossy. */
 function renderOrdered(c, maxI){
   c.lineJoin='round'; c.lineCap='round';
-  const LW=4.4;
+  const LWs=5.4, LWf=4.2;
   const segs=geom.segs;
+
+  c.save(); c.translate(1.0,-1.2);
+  c.lineWidth=LWs+1.0; c.strokeStyle='rgba(50,38,26,0.15)';
+  c.beginPath();
   for(let k=0;k&lt;segs.length;k++){
     const sg=segs[k];
     if(maxI!=null &amp;&amp; sg.i&gt;=maxI) break;
-    if(blockHidden[sg.b]) continue;        // this color is toggled hidden
+    if(blockHidden[sg.b]) continue;
+    c.moveTo(sg.x1,sg.y1); c.lineTo(sg.x2,sg.y2);
+  }
+  c.stroke(); c.restore();
+
+  let bp=null, bpb=-1, bpSat=0, bpN=0;
+  function flushBase(){
+    if(!bp) return;
+    var _sat=(bpSat/Math.max(1,bpN))&gt;0.5;
+    c.lineWidth=(_sat?LWs:LWf)+0.8;
+    c.strokeStyle=shade(blockColors[bpb]||'#333', _sat?-0.06:-0.03);
+    c.stroke(bp);
+  }
+  for(let k=0;k&lt;segs.length;k++){
+    const sg=segs[k];
+    if(maxI!=null &amp;&amp; sg.i&gt;=maxI) break;
+    if(blockHidden[sg.b]) continue;
+    if(sg.b!==bpb){ flushBase(); bp=new Path2D(); bpb=sg.b; bpSat=0; bpN=0; }
+    bp.moveTo(sg.x1,sg.y1); bp.lineTo(sg.x2,sg.y2); bpSat+=sg.sat?1:0; bpN++;
+  }
+  flushBase();
+
+  for(let k=0;k&lt;segs.length;k++){
+    const sg=segs[k];
+    if(maxI!=null &amp;&amp; sg.i&gt;=maxI) break;
+    if(blockHidden[sg.b]) continue;
     const base=blockColors[sg.b]||'#333';
-    // luminance of this block's thread (0 dark .. 1 light) to temper shadows on pale colors
     var _bl = base[0]==='#' ? (function(){var cc=base.slice(1); if(cc.length===3)cc=cc.split('').map(function(x){return x+x;}).join(''); var rr=parseInt(cc.substr(0,2),16),gg=parseInt(cc.substr(2,2),16),bb=parseInt(cc.substr(4,2),16); return (0.299*rr+0.587*gg+0.114*bb)/255; })() : 0.5;
-    var _lightEase = 1 - 0.6*Math.max(0,(_bl-0.6)/0.4); // softens dark variation as thread gets pale
-    // per-stitch variation so the fill has natural grain (not airbrushed):
-    // ~1/3 of stitches darker, ~1/3 normal, ~1/3 lighter, plus fine jitter
-    const h1=(((sg.i*2654435761)&gt;&gt;&gt;0)%1000)/1000;
-    const h2=(((sg.i*40503+13)&gt;&gt;&gt;0)%1000)/1000;
-    let vary = h1&lt;0.34 ? -0.17*_lightEase : (h1&lt;0.67 ? 0.0 : 0.08);
-    vary += (h2-0.5)*0.12*_lightEase;
-    const off=sg.off + vary;
-    const mx=(sg.x1+sg.x2)/2, my=(sg.y1+sg.y2)/2;
-    const dx=sg.x2-sg.x1, dy=sg.y2-sg.y1;
-    const r=Math.max(Math.hypot(dx,dy)/2, LW*0.7);   // reach the outer ends
-    const g=c.createRadialGradient(mx,my,0, mx,my,r);
-    g.addColorStop(0.00, shade(base, off+0.30));      // soft raised highlight (matte, not glossy)
-    g.addColorStop(0.55, shade(base, off+0.04));
-    g.addColorStop(0.85, shade(base, off-0.16));
-    g.addColorStop(1.00, shade(base, off-0.34));      // gently darker outer ends
-    c.strokeStyle=g; c.lineWidth=LW;
+    const ease=1-0.6*Math.max(0,(_bl-0.6)/0.4);
+    const pale=Math.max(0,(_bl-0.6)/0.4);   // 0 = dark thread, 1 = white
+    const dk=1+1.6*pale;                     // pale threads build texture from the DARK side
+    const h1=(((sg.i*2654435761)&gt;&gt;&gt;0)%1000)/1000, h2=(((sg.i*40503+13)&gt;&gt;&gt;0)%1000)/1000;
+    if(sg.sat){
+      let vary = h1&lt;0.34 ? -0.10*(ease+0.8*pale) : (h1&lt;0.67 ? 0 : 0.07*ease);
+      vary += (h2-0.5)*0.08*(ease+0.6*pale);
+      const off=sg.off*0.85 + vary + 0.03;
+      const nsx=-sg.dy, nsy=sg.dx, sOff=LWs*0.44;
+      c.strokeStyle=shade(base, off-0.46*Math.min(dk,1.6)); c.lineWidth=1.3;
+      c.beginPath(); c.moveTo(sg.x1+nsx*sOff,sg.y1+nsy*sOff); c.lineTo(sg.x2+nsx*sOff,sg.y2+nsy*sOff); c.stroke();
+      const g=c.createLinearGradient(sg.x1,sg.y1,sg.x2,sg.y2);
+      g.addColorStop(0.00, shade(base, off-0.30*Math.min(dk,1.5)));
+      g.addColorStop(0.22, shade(base, off));
+      g.addColorStop(0.50, shade(base, off+0.32));
+      g.addColorStop(0.78, shade(base, off));
+      g.addColorStop(1.00, shade(base, off-0.30*Math.min(dk,1.5)));
+      c.strokeStyle=g; c.lineWidth=LWs;
+    } else {
+      let vary = h1&lt;0.34 ? -0.08*dk : (h1&lt;0.67 ? 0 : 0.05*ease);
+      vary += (h2-0.5)*(0.05*ease + 0.07*pale);
+      if(h1&gt;0.955) vary += 0.20*ease;
+      const off=sg.off*(0.8+0.3*pale) + vary + 0.02;
+      const g=c.createLinearGradient(sg.x1,sg.y1,sg.x2,sg.y2);
+      g.addColorStop(0.00, shade(base, off-0.16*dk));
+      g.addColorStop(0.18, shade(base, off+0.02));
+      g.addColorStop(0.50, shade(base, off+0.10));
+      g.addColorStop(0.82, shade(base, off+0.02));
+      g.addColorStop(1.00, shade(base, off-0.16*dk));
+      c.strokeStyle=g; c.lineWidth=LWf;
+    }
     c.beginPath(); c.moveTo(sg.x1,sg.y1); c.lineTo(sg.x2,sg.y2); c.stroke();
   }
 }
@@ -2550,9 +2597,14 @@ function renderBuf(s, maxI){
   const w=(maxX-minX)||1, h=(maxY-minY)||1;
   const pad=18, dpr=window.devicePixelRatio||1;
   let rs=s, pxW=Math.ceil((w+2*pad)*s*dpr), pxH=Math.ceil((h+2*pad)*s*dpr);
-  const maxpx=4096;
-  if(pxW&gt;maxpx||pxH&gt;maxpx){ rs=s*Math.min(maxpx/pxW,maxpx/pxH);
-    pxW=Math.ceil((w+2*pad)*rs*dpr); pxH=Math.ceil((h+2*pad)*rs*dpr); }
+  // Cap by AREA, not a hard 4096 per side — wide designs (a 24cm patch!) were
+  // being rendered small and stretched up, which read as washed-out threads.
+  const maxSide=8192, maxArea=26000000;
+  let shrink=1;
+  if(pxW&gt;maxSide) shrink=Math.min(shrink, maxSide/pxW);
+  if(pxH&gt;maxSide) shrink=Math.min(shrink, maxSide/pxH);
+  if(pxW*pxH*shrink*shrink&gt;maxArea) shrink=Math.min(shrink, Math.sqrt(maxArea/(pxW*pxH)));
+  if(shrink&lt;1){ rs=s*shrink; pxW=Math.ceil((w+2*pad)*rs*dpr); pxH=Math.ceil((h+2*pad)*rs*dpr); }
   buf.width=pxW; buf.height=pxH;
   bctx.setTransform(dpr*rs,0,0,-dpr*rs, dpr*(pad-minX)*rs, dpr*(maxY+pad)*rs);
   bctx.clearRect(minX-pad, minY-pad, w+2*pad, h+2*pad);
@@ -2642,16 +2694,21 @@ function shade(hex, lum){
   let c=hex.slice(1);
   if(c.length===3) c=c.split('').map(x=&gt;x+x).join('');
   let r=parseInt(c.substr(0,2),16), g=parseInt(c.substr(2,2),16), b=parseInt(c.substr(4,2),16);
-  if(lum&gt;=0){ r+= (255-r)*lum; g+=(255-g)*lum; b+=(255-b)*lum; }
-  else {
-    // Darkening: ease off on already-light threads so whites/creams don't go muddy grey.
-    // baseLum 0..1 ; near-white =&gt; much gentler darkening, dark threads =&gt; full effect.
+  if(lum&gt;=0){
+    // Sheen must stay SATURATED — real thread highlights don't turn pastel.
+    // Mostly scale the color up, only a whisper toward white.
+    const f=lum;
+    r=Math.min(255, r*(1+0.55*f) + (255-r)*0.30*f);
+    g=Math.min(255, g*(1+0.55*f) + (255-g)*0.30*f);
+    b=Math.min(255, b*(1+0.55*f) + (255-b)*0.30*f);
+  } else {
     const baseLum=(0.299*r+0.587*g+0.114*b)/255;
-    const ease=1 - 0.78*Math.max(0,(baseLum-0.55)/0.45); // 1.0 for mid/dark, ~0.22 at pure white
+    const ease=1 - 0.78*Math.max(0,(baseLum-0.55)/0.45);
     const f=1+lum*ease;
     r*=f; g*=f; b*=f;
   }
-  return 'rgb('+(Math.max(0,r)|0)+','+(Math.max(0,g)|0)+','+(Math.max(0,b)|0)+')';
+  const h=x=&gt;('0'+Math.round(Math.max(0,Math.min(255,x))).toString(16)).slice(-2);
+  return '#'+h(r)+h(g)+h(b);
 }
 
 /* ===========================================================
@@ -3119,10 +3176,9 @@ fitCanvas();
     file: document.getElementById('panel-file'),
     design: document.getElementById('panel-design'),
     view: document.getElementById('panel-view'),
-    anim: document.getElementById('panel-anim'),
     colors: document.getElementById('panel-colors')
   };
-  var titles = { file:'File', design:'Design', view:'View', anim:'Stitch-out', colors:'Thread colors' };
+  var titles = { file:'File', design:'Stats \u00b7 Stitch-out', view:'View', colors:'Thread \u00b7 Background' };
   var current = null;
 
   function openSheet(name){
