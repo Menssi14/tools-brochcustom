@@ -1247,7 +1247,7 @@
 &lt;main id=&quot;app&quot;&gt;&lt;/main&gt;
 &lt;button class=&quot;embed-adminlink&quot; id=&quot;adminLink&quot; style=&quot;display:none&quot;&gt;Admin&lt;/button&gt;
 &lt;div class=&quot;toast&quot; id=&quot;toast&quot;&gt;&lt;/div&gt;
-&lt;input type=&quot;file&quot; id=&quot;fileInput&quot; accept=&quot;.svg,.png,.jpg,.jpeg,.webp,image/*&quot; multiple style=&quot;display:none&quot;&gt;
+&lt;input type=&quot;file&quot; id=&quot;fileInput&quot; accept=&quot;.svg,.png,.jpg,.jpeg,.webp,.dst,image/*&quot; multiple style=&quot;display:none&quot;&gt;
 
 &lt;script src=&quot;https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2&quot;&gt;&lt;/script&gt;
 &lt;script&gt;
@@ -1561,6 +1561,12 @@
   // ---------- add files (dedup + group by base name) ----------
   function addFiles(folderId,files){
     var arr=Array.prototype.slice.call(files);
+    // .dst files aren't images — pull them out and send each through the
+    // thread-color flow. Whatever's left (png/svg/jpg) continues as normal.
+    var dsts=arr.filter(function(f){return (f.name.split(&quot;.&quot;).pop()||&quot;&quot;).toLowerCase()===&quot;dst&quot;;});
+    arr=arr.filter(function(f){return (f.name.split(&quot;.&quot;).pop()||&quot;&quot;).toLowerCase()!==&quot;dst&quot;;});
+    if(dsts.length){ _dstQueue=dsts.slice(1); bcHandleDST(folderId, dsts[0]); }
+    if(!arr.length) return;
     var jobs=arr.map(function(file){
       return hashFile(file).then(function(hash){ return {file:file,hash:hash}; });
     });
@@ -1772,7 +1778,14 @@
     if(dz){
       [&quot;dragenter&quot;,&quot;dragover&quot;].forEach(function(ev){ dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.add(&quot;drag&quot;);}); });
       [&quot;dragleave&quot;,&quot;drop&quot;].forEach(function(ev){ dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.remove(&quot;drag&quot;);}); });
-      dz.addEventListener(&quot;drop&quot;,function(e){ if(e.dataTransfer&amp;&amp;e.dataTransfer.files.length) addFiles(cur,e.dataTransfer.files); });
+      dz.addEventListener(&quot;drop&quot;,function(e){
+        if(!(e.dataTransfer&amp;&amp;e.dataTransfer.files.length)) return;
+        var fs=Array.prototype.slice.call(e.dataTransfer.files);
+        var dst=fs.filter(function(f){return (f.name.split(&quot;.&quot;).pop()||&quot;&quot;).toLowerCase()===&quot;dst&quot;;});
+        var rest=fs.filter(function(f){return (f.name.split(&quot;.&quot;).pop()||&quot;&quot;).toLowerCase()!==&quot;dst&quot;;});
+        if(dst.length) bcHandleDST(cur, dst[0]);    // one at a time — each needs its colors
+        if(rest.length) addFiles(cur,rest);
+      });
     }
 
     app.querySelectorAll(&quot;[data-toggle]&quot;).forEach(function(b){ b.addEventListener(&quot;click&quot;,function(){ var f=folderById(b.getAttribute(&quot;data-toggle&quot;)); f.active=!f.active; render(); persist(); toast(f.name+(f.active?&quot; is visible&quot;:&quot; hidden from customers&quot;)); }); });
@@ -1882,10 +1895,231 @@
   });
   document.getElementById(&quot;adminPill&quot;).addEventListener(&quot;click&quot;,function(){ state.admin=false; render(); toast(&quot;Editing off&quot;); });
 
+
+/* ═══════════ DST → embroidery design ═══════════
+   Drop a .dst on a folder → set thread colors → saved as a background-free PNG,
+   tagged &quot;embroidery&quot;. Same Tajima parser + two-material renderer as the viewer. */
+function bcParseDST(buf){
+  var d=new Uint8Array(buf), i=512, x=0,y=0, block=0;
+  var st=[], minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  for(; i+2&lt;d.length; i+=3){
+    var b0=d[i],b1=d[i+1],b2=d[i+2];
+    if(b2===0xF3) break;
+    var dx=0,dy=0;
+    if(b0&amp;0x01)dx+=1; if(b0&amp;0x02)dx-=1; if(b0&amp;0x04)dx+=9; if(b0&amp;0x08)dx-=9;
+    if(b1&amp;0x01)dx+=3; if(b1&amp;0x02)dx-=3; if(b1&amp;0x04)dx+=27; if(b1&amp;0x08)dx-=27;
+    if(b2&amp;0x04)dx+=81; if(b2&amp;0x08)dx-=81;
+    if(b0&amp;0x80)dy+=1; if(b0&amp;0x40)dy-=1; if(b0&amp;0x20)dy+=9; if(b0&amp;0x10)dy-=9;
+    if(b1&amp;0x80)dy+=3; if(b1&amp;0x40)dy-=3; if(b1&amp;0x20)dy+=27; if(b1&amp;0x10)dy-=27;
+    if(b2&amp;0x20)dy+=81; if(b2&amp;0x10)dy-=81;
+    x+=dx; y+=dy;
+    var type='stitch';
+    if((b2&amp;0xC3)===0xC3){ type='color'; block++; }
+    else if(b2&amp;0x80){ type='jump'; }
+    if(type==='stitch'){ if(x&lt;minX)minX=x; if(x&gt;maxX)maxX=x; if(y&lt;minY)minY=y; if(y&gt;maxY)maxY=y; }
+    st.push({x:x,y:y,type:type,block:block});
+  }
+  return {stitches:st, bounds:{minX:minX,minY:minY,maxX:maxX,maxY:maxY}, blocks:block+1};
+}
+function bcShade(hex,l){
+  if(hex[0]!=='#')return hex; l=Math.max(-.95,Math.min(.95,l));
+  var c=hex.slice(1); if(c.length===3)c=c.split('').map(function(x){return x+x}).join('');
+  var r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
+  if(l&gt;=0){var f=l; r=Math.min(255,r*(1+.55*f)+(255-r)*.3*f); g=Math.min(255,g*(1+.55*f)+(255-g)*.3*f); b=Math.min(255,b*(1+.55*f)+(255-b)*.3*f);}
+  else{var bl=(.299*r+.587*g+.114*b)/255; var e=1-.78*Math.max(0,(bl-.55)/.45); var f=1+l*e; r*=f;g*=f;b*=f;}
+  var h=function(x){return('0'+Math.round(Math.max(0,Math.min(255,x))).toString(16)).slice(-2)};
+  return '#'+h(r)+h(g)+h(b);
+}
+/* render stitches to a TRANSPARENT canvas, colors per block */
+function bcRenderDST(parsed, colors, maxPx){
+  var b=parsed.bounds, pad=18;
+  var dw=Math.max(1,b.maxX-b.minX), dh=Math.max(1,b.maxY-b.minY);
+  var scale=Math.min(maxPx/(dw+2*pad), maxPx/(dh+2*pad));
+  var W=Math.ceil((dw+2*pad)*scale), H=Math.ceil((dh+2*pad)*scale);
+  var cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  var c=cv.getContext('2d'); c.lineJoin='round'; c.lineCap='round';
+  c.setTransform(scale,0,0,-scale,(pad-b.minX)*scale,(b.maxY+pad)*scale);
+  var segs=[], pen=false, pb=-1, S=parsed.stitches;
+  for(var i=0;i&lt;S.length;i++){
+    var p=S[i];
+    if(p.type==='stitch'){
+      if(pen &amp;&amp; p.block===pb){
+        var q=S[i-1]; segs.push({b:p.block,x1:q.x,y1:q.y,x2:p.x,y2:p.y,i:i});
+      }
+      pen=true; pb=p.block;
+    } else pen=false;
+  }
+  // classify satin vs fill
+  for(var k=0;k&lt;segs.length;k++){var sg=segs[k],pv=segs[k-1];
+    var dx=sg.x2-sg.x1,dy=sg.y2-sg.y1,l=Math.hypot(dx,dy)||1; sg.dx=dx/l; sg.dy=dy/l;
+    sg._r=(pv&amp;&amp;pv.b===sg.b&amp;&amp;(sg.dx*pv.dx+sg.dy*pv.dy)&lt;-.55)?1:0;
+  }
+  for(var k=0;k&lt;segs.length;k++){var v=0,n=0;for(var j=Math.max(0,k-3);j&lt;=Math.min(segs.length-1,k+3);j++){v+=segs[j]._r;n++;}segs[k].sat=(v/n)&gt;.45;}
+  // shadow
+  c.save(); c.translate(1,-1.2); c.lineWidth=6.4; c.strokeStyle='rgba(50,38,26,0.15)';
+  c.beginPath(); segs.forEach(function(sg){c.moveTo(sg.x1,sg.y1);c.lineTo(sg.x2,sg.y2)}); c.stroke(); c.restore();
+  // base coat
+  var bp=null,bpb=-1; segs.forEach(function(sg){ if(sg.b!==bpb){ if(bp){c.stroke(bp);} bp=new Path2D(); bpb=sg.b; c.strokeStyle=bcShade(colors[sg.b%colors.length],-.06); c.lineWidth=6; } bp.moveTo(sg.x1,sg.y1); bp.lineTo(sg.x2,sg.y2); });
+  if(bp)c.stroke(bp);
+  // threads
+  segs.forEach(function(sg){
+    var base=colors[sg.b%colors.length];
+    var cc=base.slice(1); if(cc.length===3)cc=cc.split('').map(function(x){return x+x}).join('');
+    var bl=(.299*parseInt(cc.substr(0,2),16)+.587*parseInt(cc.substr(2,2),16)+.114*parseInt(cc.substr(4,2),16))/255;
+    var ease=1-.6*Math.max(0,(bl-.6)/.4), pale=Math.max(0,(bl-.6)/.4), dk=1+1.6*pale;
+    var h1=(((sg.i*2654435761)&gt;&gt;&gt;0)%1000)/1000, h2=(((sg.i*40503+13)&gt;&gt;&gt;0)%1000)/1000;
+    if(sg.sat){
+      var vary=h1&lt;.34?-.1*(ease+.8*pale):(h1&lt;.67?0:.07*ease); vary+=(h2-.5)*.08*(ease+.6*pale);
+      var off=sg.off?sg.off:0; off=vary+.03;
+      var nsx=-sg.dy,nsy=sg.dx,so=5.4*.44;
+      c.strokeStyle=bcShade(base,off-.46*Math.min(dk,1.6)); c.lineWidth=1.3;
+      c.beginPath();c.moveTo(sg.x1+nsx*so,sg.y1+nsy*so);c.lineTo(sg.x2+nsx*so,sg.y2+nsy*so);c.stroke();
+      var g=c.createLinearGradient(sg.x1,sg.y1,sg.x2,sg.y2);
+      g.addColorStop(0,bcShade(base,off-.3*Math.min(dk,1.5)));g.addColorStop(.22,bcShade(base,off));
+      g.addColorStop(.5,bcShade(base,off+.32));g.addColorStop(.78,bcShade(base,off));g.addColorStop(1,bcShade(base,off-.3*Math.min(dk,1.5)));
+      c.strokeStyle=g;c.lineWidth=5.4;
+    } else {
+      var vary=h1&lt;.34?-.08*dk:(h1&lt;.67?0:.05*ease); vary+=(h2-.5)*(.05*ease+.07*pale); if(h1&gt;.955)vary+=.2*ease;
+      var off=vary+.02;
+      var g=c.createLinearGradient(sg.x1,sg.y1,sg.x2,sg.y2);
+      g.addColorStop(0,bcShade(base,off-.16*dk));g.addColorStop(.18,bcShade(base,off+.02));
+      g.addColorStop(.5,bcShade(base,off+.1));g.addColorStop(.82,bcShade(base,off+.02));g.addColorStop(1,bcShade(base,off-.16*dk));
+      c.strokeStyle=g;c.lineWidth=4.2;
+    }
+    c.beginPath();c.moveTo(sg.x1,sg.y1);c.lineTo(sg.x2,sg.y2);c.stroke();
+  });
+  return cv;   // return the canvas; caller compresses to match normal uploads
+}
+
+var _dstPending=null;   // {folderId, parsed, name}
+var _dstQueue=[];       // more DSTs waiting for their turn
+function bcHandleDST(folderId, file){
+  if(folderId==null){ toast('Open a category first, then add the DST inside it'); return; }
+  var rd=new FileReader();
+  rd.onload=function(){
+    try{
+      var parsed=bcParseDST(rd.result);
+      if(!parsed.stitches.length){ toast('That DST looks empty'); return; }
+      _dstPending={folderId:folderId, parsed:parsed, name:baseName(file.name)};
+      bcOpenColorDialog(parsed.blocks);
+    }catch(e){ toast('Could not read that DST: '+(e&amp;&amp;e.message||e)); }
+  };
+  rd.readAsArrayBuffer(file);
+}
+var BC_THREADS=['#C8102E','#FFFFFF','#1B1B1B','#003DA5','#FFB81C','#00843D','#5F259F','#FF6900','#9EA2A2','#7B2C3A'];
+function bcOpenColorDialog(nBlocks){
+  var ov=document.getElementById('dstColorOverlay'); var rows=document.getElementById('dstColorRows');
+  rows.innerHTML='';
+  for(var i=0;i&lt;nBlocks;i++){
+    var def=BC_THREADS[i%BC_THREADS.length];
+    var row=document.createElement('div'); row.className='dcr';
+    row.innerHTML='&lt;span class=&quot;dcr-l&quot;&gt;Thread '+(i+1)+'&lt;/span&gt;'+
+      '&lt;input type=&quot;color&quot; class=&quot;dcr-c&quot; value=&quot;'+def+'&quot; data-blk=&quot;'+i+'&quot;&gt;';
+    rows.appendChild(row);
+  }
+  bcUpdateDstPreview();
+  ov.classList.add('show');
+  rows.querySelectorAll('.dcr-c').forEach(function(inp){ inp.addEventListener('input', bcUpdateDstPreview); });
+}
+function bcCurrentColors(){
+  return Array.prototype.map.call(document.querySelectorAll('#dstColorRows .dcr-c'), function(i){return i.value;});
+}
+var _dstPrevTimer=null;
+function bcUpdateDstPreview(){
+  if(!_dstPending)return;
+  clearTimeout(_dstPrevTimer);
+  _dstPrevTimer=setTimeout(function(){
+    if(!_dstPending)return;
+    try{
+      var cv=bcRenderDST(_dstPending.parsed, bcCurrentColors(), 240);
+      var el=document.getElementById('dstPreviewImg'); if(el) el.src=cv.toDataURL('image/png');
+    }catch(e){}
+  }, 180);
+}
+var _dstSaving=false;
+function bcSaveDST(){
+  if(!_dstPending || _dstSaving) return;
+  _dstSaving=true;
+  var btn=document.getElementById('dstSaveBtn'); if(btn){ btn.textContent='Saving\u2026'; btn.disabled=true; }
+  var pend=_dstPending, cols=bcCurrentColors();
+  // defer the heavy render one tick so the button paints its &quot;Saving…&quot; state first
+  setTimeout(function(){
+    try{
+      var cv=bcRenderDST(pend.parsed, cols, 700);
+      // WebP like every other design — a PNG here is ~10x bigger and overflows the catalog file
+      var png=cv.toDataURL('image/webp', 0.85);
+      if(png.indexOf('image/webp')&lt;0) png=cv.toDataURL('image/png');  // Safari fallback
+      var fid=pend.folderId, nm=pend.name, k=lc(baseName(nm));
+      var d=state.designs.find(function(x){return x.folderId===fid &amp;&amp; x.key===k;});
+      if(!d){ d={id:uid('d'),folderId:fid,key:k,name:prettify(nm),tags:['embroidery'],png:null,svg:null,pngHash:null,svgHash:null}; state.designs.push(d); }
+      else { d.tags=['embroidery']; }
+      d.png=png; d.pngHash=uid('h');
+      // make sure the view is showing the folder we just saved into
+      if(curId()!==fid){ state.path=[fid]; }
+      if(state.filter &amp;&amp; state.filter!=='all' &amp;&amp; state.filter!=='embroidery') state.filter='all';
+      document.getElementById('dstColorOverlay').classList.remove('show');
+      _dstPending=null; _dstSaving=false;
+      if(btn){ btn.textContent='Save as embroidery'; btn.disabled=false; }
+      render(); persist(); toast('Embroidery design saved');
+      _dstNext();
+    }catch(e){
+      _dstSaving=false;
+      if(btn){ btn.textContent='Save as embroidery'; btn.disabled=false; }
+      toast('Save error: '+(e&amp;&amp;e.message?e.message:e));
+      try{ console.error('DST save failed', e); }catch(_){}
+    }
+  }, 30);
+}
+function _dstNext(){
+  if(_dstQueue &amp;&amp; _dstQueue.length){
+    var f=_dstQueue.shift();
+    var fid=(_dstPending&amp;&amp;_dstPending.folderId)||curId();
+    setTimeout(function(){ bcHandleDST(curId(), f); }, 150);
+  }
+}
+
+  // expose the DST dialog handlers globally so the dialog's buttons reach them
+  window.bcSaveDST = bcSaveDST;
+  window.bcDstCancel = function(){
+    document.getElementById('dstColorOverlay').classList.remove('show');
+    _dstPending=null; _dstNext();
+  };
+
   loadCatalog();
 })();
+
+
 &lt;/script&gt;
 
+
+&lt;div class=&quot;overlay&quot; id=&quot;dstColorOverlay&quot; style=&quot;display:none&quot;&gt;
+  &lt;div class=&quot;dst-card&quot;&gt;
+    &lt;div class=&quot;dst-head&quot;&gt;Set the thread colors&lt;/div&gt;
+    &lt;div class=&quot;dst-body&quot;&gt;
+      &lt;div class=&quot;dst-preview&quot;&gt;&lt;img id=&quot;dstPreviewImg&quot; alt=&quot;&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;dst-rows&quot; id=&quot;dstColorRows&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;dst-foot&quot;&gt;
+      &lt;button class=&quot;dst-btn ghost&quot; onclick=&quot;bcDstCancel()&quot;&gt;Cancel&lt;/button&gt;
+      &lt;button class=&quot;dst-btn&quot; id=&quot;dstSaveBtn&quot; onclick=&quot;window.bcSaveDST&amp;&amp;window.bcSaveDST()&quot;&gt;Save as embroidery&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;style&gt;
+  #dstColorOverlay.show{display:flex !important;}
+  .dst-card{background:#FBF7EE;border-radius:18px;max-width:520px;width:100%;overflow:hidden;box-shadow:0 20px 60px rgba(22,58,46,.4);}
+  .dst-head{background:var(--forest,#1F4D3E);color:#F2EADD;font-family:'Teko',sans-serif;font-size:20px;letter-spacing:.06em;text-transform:uppercase;padding:14px 20px;}
+  .dst-body{padding:18px 20px;display:flex;gap:18px;flex-wrap:wrap;}
+  .dst-preview{flex:1 1 200px;min-width:180px;background:repeating-conic-gradient(#efe9db 0 25%,#fffdf8 0 50%) 0 0/16px 16px;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:10px;}
+  .dst-preview img{max-width:100%;max-height:230px;display:block;}
+  .dst-rows{flex:1 1 180px;display:flex;flex-direction:column;gap:9px;max-height:240px;overflow-y:auto;}
+  .dcr{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .dcr-l{font-family:'Teko',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:15px;color:var(--burgundy);}
+  .dcr-c{width:46px;height:32px;border:1px solid #d8d0be;border-radius:8px;background:none;cursor:pointer;padding:2px;}
+  .dst-foot{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px 18px;border-top:1px solid rgba(31,77,62,.1);}
+  .dst-btn{font-family:'Teko',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:16px;padding:11px 20px;border-radius:999px;border:none;background:var(--forest,#1F4D3E);color:#F2EADD;cursor:pointer;}
+  .dst-btn.ghost{background:none;border:1.5px solid var(--forest,#1F4D3E);color:var(--forest,#1F4D3E);}
+&lt;/style&gt;
 &lt;/body&gt;
 &lt;/html&gt;
 "></iframe>
@@ -2193,19 +2427,17 @@
           &lt;div class=&quot;stat&quot;&gt;&lt;div class=&quot;k&quot;&gt;Trims/stops&lt;/div&gt;&lt;div class=&quot;v&quot; id=&quot;sStop&quot;&gt;–&lt;/div&gt;&lt;/div&gt;
         &lt;/div&gt;
         &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
-        &lt;button class=&quot;btn&quot; id=&quot;playBtn&quot;&gt;▶ Play&lt;/button&gt;
-        &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
-        &lt;div class=&quot;row&quot;&gt;&lt;label for=&quot;speed&quot;&gt;Speed&lt;/label&gt;&lt;/div&gt;
-        &lt;input type=&quot;range&quot; id=&quot;speed&quot; min=&quot;1&quot; max=&quot;100&quot; step=&quot;1&quot; value=&quot;40&quot;&gt;
-      &lt;/div&gt;
-
-      &lt;div id=&quot;panel-view&quot; style=&quot;display:none&quot;&gt;
         &lt;div class=&quot;row&quot;&gt;&lt;label for=&quot;zoom&quot;&gt;Zoom&lt;/label&gt;&lt;/div&gt;
         &lt;input type=&quot;range&quot; id=&quot;zoom&quot; min=&quot;0.2&quot; max=&quot;6&quot; step=&quot;0.05&quot; value=&quot;1&quot;&gt;
         &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
         &lt;div class=&quot;row&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;showJumps&quot;&gt;&lt;label for=&quot;showJumps&quot;&gt;Show jump / move lines&lt;/label&gt;&lt;/div&gt;
         &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
         &lt;button class=&quot;btn secondary&quot; id=&quot;resetBtn&quot;&gt;Reset view&lt;/button&gt;
+        &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
+        &lt;button class=&quot;btn&quot; id=&quot;playBtn&quot;&gt;▶ Play stitch-out&lt;/button&gt;
+        &lt;div class=&quot;spacer&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;row&quot;&gt;&lt;label for=&quot;speed&quot;&gt;Playback speed&lt;/label&gt;&lt;/div&gt;
+        &lt;input type=&quot;range&quot; id=&quot;speed&quot; min=&quot;1&quot; max=&quot;100&quot; step=&quot;1&quot; value=&quot;40&quot;&gt;
       &lt;/div&gt;
 
       &lt;div id=&quot;panel-colors&quot; style=&quot;display:none&quot;&gt;
@@ -2237,10 +2469,6 @@
     &lt;/button&gt;
     &lt;button class=&quot;tbtn&quot; data-sheet=&quot;design&quot;&gt;
       &lt;svg class=&quot;ic&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1&quot;/&gt;&lt;rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1&quot;/&gt;&lt;rect x=&quot;3&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1&quot;/&gt;&lt;rect x=&quot;14&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1&quot;/&gt;&lt;/svg&gt;
-      Stats
-    &lt;/button&gt;
-    &lt;button class=&quot;tbtn&quot; data-sheet=&quot;view&quot;&gt;
-      &lt;svg class=&quot;ic&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;&gt;&lt;circle cx=&quot;11&quot; cy=&quot;11&quot; r=&quot;7&quot;/&gt;&lt;line x1=&quot;11&quot; y1=&quot;8&quot; x2=&quot;11&quot; y2=&quot;14&quot;/&gt;&lt;line x1=&quot;8&quot; y1=&quot;11&quot; x2=&quot;14&quot; y2=&quot;11&quot;/&gt;&lt;line x1=&quot;16.5&quot; y1=&quot;16.5&quot; x2=&quot;21&quot; y2=&quot;21&quot;/&gt;&lt;/svg&gt;
       View
     &lt;/button&gt;
     &lt;button class=&quot;tbtn&quot; data-sheet=&quot;colors&quot;&gt;
@@ -3175,10 +3403,9 @@ fitCanvas();
   var panels = {
     file: document.getElementById('panel-file'),
     design: document.getElementById('panel-design'),
-    view: document.getElementById('panel-view'),
     colors: document.getElementById('panel-colors')
   };
-  var titles = { file:'File', design:'Stats \u00b7 Stitch-out', view:'View', colors:'Thread \u00b7 Background' };
+  var titles = { file:'File', design:'View \u00b7 Stats \u00b7 Play', colors:'Thread \u00b7 Background' };
   var current = null;
 
   function openSheet(name){
