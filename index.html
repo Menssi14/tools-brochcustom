@@ -1279,7 +1279,7 @@
         hashes: state.hashes
       };
       var blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
-      sb.storage.from(BUCKET).upload(CATALOG_FILE, blob, {upsert:true}).then(function(res){
+      sb.storage.from(BUCKET).upload(CATALOG_FILE, blob, {upsert:true, cacheControl:'0'}).then(function(res){
         if(res &amp;&amp; res.error){ console.warn('Catalog save failed', res.error); toast('Save failed — check connection'); }
       });
     }catch(e){ console.warn('Catalog save error', e); }
@@ -1287,7 +1287,12 @@
   function loadCatalog(){
     if(!sb){ _loaded = true; render(); return; }
     showLoading();
-    sb.storage.from(BUCKET).download(CATALOG_FILE+'?t='+Date.now()).then(function(res){
+    function _grab(path){ return sb.storage.from(BUCKET).download(path); }
+    _grab(CATALOG_FILE+'?t='+Date.now()).then(function(r){
+      // some setups reject the timestamped path — fall back to the plain name
+      if(r &amp;&amp; r.data) return r;
+      return _grab(CATALOG_FILE);
+    }).then(function(res){
       if(res &amp;&amp; res.data){
         res.data.text().then(function(txt){
           try{
@@ -2062,6 +2067,7 @@ function bcSaveCatalogNow(){
     _bcUpload();
   }).catch(function(){ _bcUpload(); });
 }
+var _bcVerifyId=null;
 function _bcUpload(){
   try{
     var payload={ v:1, folders:state.folders, designs:state.designs, hashes:state.hashes };
@@ -2069,12 +2075,24 @@ function _bcUpload(){
     var mb=(json.length/1048576);
     var blob=new Blob([json],{type:'application/json'});
     toast('Saving to the cloud\u2026');
-    sb.storage.from(BUCKET).upload(CATALOG_FILE, blob, {upsert:true}).then(function(res){
+    sb.storage.from(BUCKET).upload(CATALOG_FILE, blob, {upsert:true, cacheControl:'0'}).then(function(res){
       if(res &amp;&amp; res.error){
         toast('Cloud save FAILED: '+((res.error&amp;&amp;res.error.message)||'unknown')+' (catalog is '+mb.toFixed(1)+' MB)');
         try{ console.error('catalog upload failed', res.error); }catch(_){}
+      } else if(_bcVerifyId){
+        // Trust nothing: read the file back and confirm the design is in it.
+        sb.storage.from(BUCKET).download(CATALOG_FILE+'?v='+Date.now()).then(function(rr){
+          if(!rr || !rr.data){ toast('Saved, but could not read it back'); return; }
+          rr.data.text().then(function(t){
+            var found=false, count=0;
+            try{ var j=JSON.parse(t); count=(j.designs||[]).length; found=(j.designs||[]).some(function(d){return d.id===_bcVerifyId;}); }catch(e){}
+            toast(found ? ('Saved \u2713 in cloud ('+count+' designs, '+mb.toFixed(1)+' MB)')
+                        : ('SAVED BUT MISSING from cloud file \u2014 '+count+' designs, '+mb.toFixed(1)+' MB'));
+            _bcVerifyId=null;
+          });
+        }).catch(function(){ toast('Saved, but verification failed'); });
       } else {
-        toast('Embroidery design saved \u2713');
+        toast('Saved \u2713');
       }
     }).catch(function(err){
       toast('Cloud save error: '+(err&amp;&amp;err.message?err.message:err));
@@ -2105,7 +2123,8 @@ function bcSaveDST(){
       _dstPending=null; _dstSaving=false;
       if(btn){ btn.textContent='Save as embroidery'; btn.disabled=false; }
       render();
-      bcSaveCatalogNow();      // upload right now, and report what actually happens
+      _bcVerifyId=d.id;        // verify THIS design really lands in the cloud file
+      bcSaveCatalogNow();
       _dstNext();
     }catch(e){
       _dstSaving=false;
