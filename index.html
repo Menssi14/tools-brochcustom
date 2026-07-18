@@ -1287,7 +1287,7 @@
   function loadCatalog(){
     if(!sb){ _loaded = true; render(); return; }
     showLoading();
-    sb.storage.from(BUCKET).download(CATALOG_FILE).then(function(res){
+    sb.storage.from(BUCKET).download(CATALOG_FILE+'?t='+Date.now()).then(function(res){
       if(res &amp;&amp; res.data){
         res.data.text().then(function(txt){
           try{
@@ -2037,6 +2037,50 @@ function bcUpdateDstPreview(){
   }, 180);
 }
 var _dstSaving=false;
+/* Upload the catalog immediately and say what happened — the debounced
+   persist() was hiding failures, so a design could look saved but never land. */
+function bcSaveCatalogNow(){
+  if(!sb){ toast('Saved on this device only (no cloud connection)'); return; }
+  // Re-read the cloud first and merge, so a stale local copy can never wipe
+  // designs added elsewhere (or moments ago on this device).
+  sb.storage.from(BUCKET).download(CATALOG_FILE+'?t='+Date.now()).then(function(r){
+    if(r &amp;&amp; r.data) return r.data.text().then(function(txt){
+      try{
+        var cloud=JSON.parse(txt);
+        if(cloud &amp;&amp; Array.isArray(cloud.designs)){
+          var mine={}; state.designs.forEach(function(d){ mine[d.id]=d; });
+          cloud.designs.forEach(function(cd){ if(cd &amp;&amp; cd.id &amp;&amp; !mine[cd.id]) state.designs.push(cd); });
+        }
+        if(cloud &amp;&amp; Array.isArray(cloud.folders)){
+          var mf={}; state.folders.forEach(function(f){ mf[f.id]=f; });
+          cloud.folders.forEach(function(cf){ if(cf &amp;&amp; cf.id &amp;&amp; !mf[cf.id]) state.folders.push(cf); });
+        }
+        if(cloud &amp;&amp; cloud.hashes) for(var k in cloud.hashes){ if(!state.hashes[k]) state.hashes[k]=cloud.hashes[k]; }
+      }catch(e){}
+      _bcUpload();
+    });
+    _bcUpload();
+  }).catch(function(){ _bcUpload(); });
+}
+function _bcUpload(){
+  try{
+    var payload={ v:1, folders:state.folders, designs:state.designs, hashes:state.hashes };
+    var json=JSON.stringify(payload);
+    var mb=(json.length/1048576);
+    var blob=new Blob([json],{type:'application/json'});
+    toast('Saving to the cloud\u2026');
+    sb.storage.from(BUCKET).upload(CATALOG_FILE, blob, {upsert:true}).then(function(res){
+      if(res &amp;&amp; res.error){
+        toast('Cloud save FAILED: '+((res.error&amp;&amp;res.error.message)||'unknown')+' (catalog is '+mb.toFixed(1)+' MB)');
+        try{ console.error('catalog upload failed', res.error); }catch(_){}
+      } else {
+        toast('Embroidery design saved \u2713');
+      }
+    }).catch(function(err){
+      toast('Cloud save error: '+(err&amp;&amp;err.message?err.message:err));
+    });
+  }catch(e){ toast('Save error: '+(e&amp;&amp;e.message?e.message:e)); }
+}
 function bcSaveDST(){
   if(!_dstPending || _dstSaving) return;
   _dstSaving=true;
@@ -2045,9 +2089,9 @@ function bcSaveDST(){
   // defer the heavy render one tick so the button paints its &quot;Saving…&quot; state first
   setTimeout(function(){
     try{
-      var cv=bcRenderDST(pend.parsed, cols, 700);
+      var cv=bcRenderDST(pend.parsed, cols, 620);
       // WebP like every other design — a PNG here is ~10x bigger and overflows the catalog file
-      var png=cv.toDataURL('image/webp', 0.85);
+      var png=cv.toDataURL('image/webp', 0.80);
       if(png.indexOf('image/webp')&lt;0) png=cv.toDataURL('image/png');  // Safari fallback
       var fid=pend.folderId, nm=pend.name, k=lc(baseName(nm));
       var d=state.designs.find(function(x){return x.folderId===fid &amp;&amp; x.key===k;});
@@ -2060,7 +2104,8 @@ function bcSaveDST(){
       document.getElementById('dstColorOverlay').classList.remove('show');
       _dstPending=null; _dstSaving=false;
       if(btn){ btn.textContent='Save as embroidery'; btn.disabled=false; }
-      render(); persist(); toast('Embroidery design saved');
+      render();
+      bcSaveCatalogNow();      // upload right now, and report what actually happens
       _dstNext();
     }catch(e){
       _dstSaving=false;
