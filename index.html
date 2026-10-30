@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+window.BC_ORDER_UPLOAD=new URLSearchParams(location.search).has('orderUpload');
+if(window.BC_ORDER_UPLOAD){document.documentElement.style.visibility='hidden';document.addEventListener('DOMContentLoaded',function(){
+const token=new URLSearchParams(location.search).get('orderUpload');
+const frame=document.createElement('iframe');frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;background:#f6f4ef;z-index:2147483647';frame.title='Upload order photos';
+frame.srcdoc=/^[a-f0-9]{48}$/.test(token)?"<style>\nbody{margin:0;background:#f6f4ef;color:#23483c;font:18px system-ui,sans-serif;padding:32px 22px;box-sizing:border-box}main{max-width:480px;margin:6vh auto}h1{font-size:38px;line-height:1.1;margin:32px 0 16px}p{line-height:1.5;color:#626e65}label,button{display:block;background:#23483c;color:white;border:0;border-radius:14px;padding:22px;text-align:center;font:600 20px system-ui;margin:24px 0;cursor:pointer;width:100%;box-sizing:border-box}input{position:absolute;width:1px;height:1px;opacity:0}li{padding:12px 0;overflow-wrap:anywhere}#message{min-height:58px}button:disabled{opacity:.55}\n</style><main><b>BROCH CUSTOM</b><h1>Add photos to your order</h1><p>Choose up to 3 photos. Wi-Fi or mobile data both work.</p><label id=\"choose\">Choose photos<input id=\"photos\" type=\"file\" accept=\"image/jpeg,image/png\" multiple></label><ul id=\"receipts\"></ul><p id=\"message\" role=\"status\">Connecting to your order\u2026</p><button id=\"retry\" hidden>Retry upload</button><p>Keep this page open until every photo is confirmed. Then finish your order at the kiosk.</p></main>\n<script>\n(async function(){\n'use strict';\nconst token=new URLSearchParams(parent.location.search).get('orderUpload');\nconst prefix='_share/kiosk_'+token+'_';\nconst input=document.getElementById('photos'),message=document.getElementById('message'),list=document.getElementById('receipts'),retry=document.getElementById('retry');\nlet busy=false,queue=[],state;\nasync function call(body){const r=await fetch('/api/minio-file',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'File Share is unavailable. Please retry.');return d;}\nasync function download(key){const d=await call({action:'view-urls',keys:[key]});const r=await fetch(d.urls[key],{cache:'no-store'});if(!r.ok)throw Error('This upload link is unavailable. Scan the kiosk QR again.');return r;}\nasync function check(){state=await (await download(prefix+'state.json')).json();if(state.status!=='open'||Date.now()>state.expires)throw Error('This order is not accepting photos. Return to the kiosk.');}\nasync function files(){return (await call({action:'list',prefix:prefix})).files.filter(f=>/\\.(jpe?g|png)$/i.test(f.key)&&!(state.ignored||[]).includes(f.key));}\nasync function refresh(){list.textContent='';for(const f of await files()){const li=document.createElement('li');li.textContent='\u2713 '+f.key.slice(prefix.length).replace(/^[a-f0-9]{32}_/,'');list.appendChild(li);}}\nasync function put(key,body,type){const d=await call({action:'upload-url',key:key,contentType:type});const r=await fetch(d.url,{method:'PUT',headers:{'Content-Type':type},body:body});if(!r.ok)throw Error('Upload failed. Tap Retry upload.');}\nasync function remove(key){await call({action:'delete',key:key});}\nasync function run(){if(busy)return;busy=true;input.disabled=true;retry.hidden=true;try{\nwhile(queue.length){const item=queue[0];await check();const existing=await files();if(!existing.some(f=>f.key===item.key)&&existing.length>=3)throw Error('This order already has 3 photos. Return to the kiosk.');\nconst marker=item.key+'.pending';await put(marker,'uploading','text/plain');try{await check();message.textContent='Uploading '+item.file.name+'\u2026';await put(item.key,item.file,item.file.type);const received=await (await download(item.key)).arrayBuffer();if(received.byteLength!==item.file.size)throw Error('The complete photo was not received. Retry upload.');const a=await crypto.subtle.digest('SHA-256',received),b=await crypto.subtle.digest('SHA-256',await item.file.arrayBuffer());if(new Uint8Array(a).some((v,i)=>v!==new Uint8Array(b)[i]))throw Error('Photo verification failed. Retry upload.');}catch(e){await remove(item.key);throw e;}finally{await remove(marker);}\nqueue.shift();await refresh();}\nmessage.textContent='Photos uploaded. Wait for them to appear on the kiosk, then send your order.';\n}catch(e){message.textContent=e.message;retry.hidden=!queue.length;}finally{busy=false;input.disabled=false;}}\ninput.addEventListener('change',async()=>{const selected=Array.from(input.files);input.value='';if(queue.length){message.textContent='Retry the selected photos first.';return;}if(selected.length>3){message.textContent='Choose up to 3 photos.';return;}for(const f of selected){if(!['image/jpeg','image/png'].includes(f.type)||f.size>25*1024*1024||!f.size){message.textContent='Choose JPEG or PNG photos smaller than 25 MB.';return;}}queue=selected.map(file=>({file,key:prefix+crypto.randomUUID().replace(/-/g,'')+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_').replace(/\\.{2,}/g,'.').slice(-100)}));await run();});\nretry.onclick=run;\ntry{await check();await refresh();message.textContent='Ready for your photos.';}catch(e){message.textContent=e.message;input.disabled=true;}\n})();\n<\/script>":'<p>Invalid order link. Scan the QR on the kiosk.</p>';
+document.body.replaceChildren(frame);document.documentElement.style.visibility='visible';});}
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="theme-color" content="#2C4637">
@@ -4426,7 +4434,7 @@ try { window.parent.postMessage('BC_DST_READY', '*'); } catch(e) {}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
 
-<script>
+<script>if(!window.BC_ORDER_UPLOAD){
 document.addEventListener('DOMContentLoaded', function() {
 
   var SUPABASE_URL = 'https://ixuxzdaevbytnznxmtal.supabase.co';
@@ -5206,7 +5214,7 @@ document.addEventListener('DOMContentLoaded', function() {
         lastFileFingerprint = null;
         return;
       }
-      var data = result.data.filter(function(f) { return f.name.indexOf('_') !== 0; });
+      var data = result.data.filter(function(f) { return f.name.indexOf('_') !== 0 && !/^kiosk_[a-f0-9]{48}_state\.json$/.test(f.name) && !/\.pending$/.test(f.name); });
 
       // Only redraw if the list actually changed (prevents buttons jumping under fingers)
       var fingerprint = data.map(function(f) { return f.name; }).join('|');
@@ -5219,7 +5227,7 @@ document.addEventListener('DOMContentLoaded', function() {
       fileCount.textContent = data.length + (data.length === 1 ? ' file' : ' files');
 
       data.forEach(function(file) {
-        var displayName = file.name.replace(/^\d+_/, '');
+        var displayName = file.name.replace(/^kiosk_[a-f0-9]{48}_[a-f0-9]{32}_/, '').replace(/^\d+_/, '');
         var ext = displayName.split('.').pop().toLowerCase();
         var canPreview = isPreviewable(ext);
         var showCast = castSupported && canCast(ext);
@@ -5955,6 +5963,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFiles();
   }, 10000);
 });
-</script>
+
+}</script>
 </body>
 </html>
